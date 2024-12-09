@@ -20,8 +20,6 @@ export default class MyPlugin extends Plugin {
 		// register suggester
 		this.suggester = new DataviewSuggester(this);
 		this.registerEditorSuggest(this.suggester);
-
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
 	onunload() {
