@@ -63,6 +63,7 @@ class SampleSettingTab extends PluginSettingTab {
 }
 
 class DataviewSuggester extends EditorSuggest<String> {
+	app: App
 
 	constructor(plugin: Plugin) {
 		super(plugin.app)
@@ -74,7 +75,7 @@ class DataviewSuggester extends EditorSuggest<String> {
 		file: TFile,
 	): EditorSuggestTriggerInfo | null {
 		const line = editor.getLine(cursor.line);
-		const regex = /\((.*?)\)/g
+		const regex = /\((.*?)\)/g  // todo min characters for match? -> research on best practices
 		
 		let match
 		while((match = regex.exec(line)) !== null) {
@@ -95,7 +96,32 @@ class DataviewSuggester extends EditorSuggest<String> {
 	}
 
 	getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
-		return ["hello", "world"]
+		const suggestions: string[] = []
+		// TODO use official dv api?
+		// @ts-ignore
+		for (const page of this.app.plugins.plugins.dataview.index.pages) {
+			const fields = page[1].fields
+			for (let [key, val] of fields) {
+				let arrayVal
+				if (!Array.isArray(val)) {
+					arrayVal = [val]
+				} else {
+					arrayVal = val
+				}
+
+				for (const value of arrayVal) {
+					// TODO whitespace in match
+					// Fuzzy matching?
+					const suggestion = key + ":: " + value
+					if (suggestion.includes(context.query) && !suggestions.includes(suggestion)) {
+						suggestions.push(key+ ":: " + value)
+					}
+				}
+			}
+
+		}
+		console.log(suggestions)
+		return suggestions
 	}
 
 	renderSuggestion(value: string, el: HTMLElement): void {
