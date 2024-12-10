@@ -1,4 +1,5 @@
 import { App, Editor, Plugin, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSuggestTriggerInfo, TFile } from 'obsidian';
+import { getTriggerText } from './trigger';
 
 export class DataviewSuggester extends EditorSuggest<String> {
 
@@ -12,24 +13,16 @@ export class DataviewSuggester extends EditorSuggest<String> {
 		file: TFile,
 	): EditorSuggestTriggerInfo | null {
 		const line = editor.getLine(cursor.line);
-		const regex = /\((.*?)\)/g  // todo min characters for match? -> research on best practices
-		
-		let match
-		while((match = regex.exec(line)) !== null) {
-
-			// check if cursor is positioned inside the match
-			const cursorInMatch = cursor.ch > match.index && cursor.ch <= match.index + match[1].length + 1
-			if (cursorInMatch) {
-
-				return {
-					start: { line: cursor.line, ch: match.index+1 },
-					end: { line: cursor.line, ch: match.index + match[1].length+1 },
-					query: match[1],
-				};
+	
+		let trigger = getTriggerText(line, cursor.ch)
+		if (trigger !== null) {
+			return {
+				query: trigger[0],
+				start: { line: cursor.line, ch: trigger[1] },
+				end: { line: cursor.line, ch: trigger[2] },
 			}
-
-		} 
-		return null;
+		}
+		return null
 	}
 
 	getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
