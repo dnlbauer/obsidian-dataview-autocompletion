@@ -1,7 +1,6 @@
 import { App, Editor, Plugin, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSuggestTriggerInfo, TFile } from 'obsidian';
 
 export class DataviewSuggester extends EditorSuggest<String> {
-	app: App
 
 	constructor(plugin: Plugin) {
 		super(plugin.app)
