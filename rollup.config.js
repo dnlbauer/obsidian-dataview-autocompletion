@@ -5,15 +5,13 @@ import typescript2 from "rollup-plugin-typescript2";
 
 const BASE_CONFIG = {
     input: "src/main.ts",
-    external: ["obsidian"]
+    external: ["obsidian"],
 };
 
 const getRollupPlugins = (tsconfig, ...plugins) =>
-    [
-        typescript2(tsconfig),
-        nodeResolve({ browser: true }),
-        commonjs(),
-    ].concat(plugins);
+    [typescript2(tsconfig), nodeResolve({ browser: true }), commonjs()].concat(
+        plugins,
+    );
 
 const DEV_PLUGIN_CONFIG = {
     ...BASE_CONFIG,
@@ -28,10 +26,16 @@ const DEV_PLUGIN_CONFIG = {
         undefined,
         copy({
             targets: [
-                { src: "manifest.json", dest: "test-vault/.obsidian/plugins/dataview-suggester/" },
-                { src: "styles.css", dest: "test-vault/.obsidian/plugins/dataview-suggester/" },
+                {
+                    src: "manifest.json",
+                    dest: "test-vault/.obsidian/plugins/dataview-suggester/",
+                },
+                {
+                    src: "styles.css",
+                    dest: "test-vault/.obsidian/plugins/dataview-suggester/",
+                },
             ],
-        })
+        }),
     ),
 };
 
