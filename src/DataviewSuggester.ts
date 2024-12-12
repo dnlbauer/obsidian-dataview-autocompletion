@@ -9,8 +9,12 @@ import {
     TFile,
 } from "obsidian";
 import { getTriggerText } from "./trigger";
+import uFuzzy from "@leeoniya/ufuzzy";
 
 export class DataviewSuggester extends EditorSuggest<String> {
+    suggestionsList: string[] = [];
+    searcher: uFuzzy = new uFuzzy({});
+
     constructor(plugin: Plugin) {
         super(plugin.app);
     }
@@ -36,34 +40,22 @@ export class DataviewSuggester extends EditorSuggest<String> {
     getSuggestions(
         context: EditorSuggestContext,
     ): string[] | Promise<string[]> {
-        const suggestions: string[] = [];
-        // TODO use official dv api?
-        // @ts-ignore
-        for (const page of this.app.plugins.plugins.dataview.index.pages) {
-            const fields = page[1].fields;
-            for (let [key, val] of fields) {
-                let arrayVal;
-                if (!Array.isArray(val)) {
-                    arrayVal = [val];
-                } else {
-                    arrayVal = val;
-                }
+        let idxs = this.searcher.filter(this.suggestionsList, context.query);
+        if (idxs != null && idxs.length > 0) {
+            let info = this.searcher.info(
+                idxs,
+                this.suggestionsList,
+                context.query,
+            );
+            let order = this.searcher.sort(
+                info,
+                this.suggestionsList,
+                context.query,
+            );
 
-                for (const value of arrayVal) {
-                    // TODO whitespace in match
-                    // Fuzzy matching?
-                    const suggestion = key + ":: " + value;
-                    if (
-                        suggestion.includes(context.query) &&
-                        !suggestions.includes(suggestion)
-                    ) {
-                        suggestions.push(key + ":: " + value);
-                    }
-                }
-            }
+            return order.map((i) => this.suggestionsList[info.idx[i]]);
         }
-        console.log(suggestions);
-        return suggestions;
+        return [];
     }
 
     renderSuggestion(value: string, el: HTMLElement): void {
@@ -71,7 +63,6 @@ export class DataviewSuggester extends EditorSuggest<String> {
     }
 
     selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
-        console.log("selected", value);
         const { editor, start, end } = this.context!;
         editor.replaceRange(value, start, end);
 
@@ -80,5 +71,43 @@ export class DataviewSuggester extends EditorSuggest<String> {
             ch: 0,
         };
         editor.setCursor(newCursorPos);
+    }
+
+    public buildNewIndex() {
+        console.log("Rebuilding dataview suggestion index");
+        const newSuggestions: string[] = [];
+
+        // Iterate all pages of the Dataview index, and ingest all fields into suggestions
+        // TODO: can we use official dataview api?
+        // @ts-ignore
+        for (const page of this.app.plugins.plugins.dataview.index.pages) {
+            const fields = page[1].fields;
+            for (let [key, val] of fields) {
+                // fields can be a single value or a dict, so we need to handle both
+                let arrayVal;
+                if (!Array.isArray(val)) {
+                    arrayVal = [val];
+                } else {
+                    arrayVal = val;
+                }
+
+                // Add composite value "key:: value" to suggestions list
+                for (const value of arrayVal) {
+                    const compositeValue = key + ":: " + value;
+                    if (newSuggestions.indexOf(compositeValue) === -1) {
+                        newSuggestions.push(compositeValue);
+                    }
+                }
+            }
+        }
+
+        // replace old index
+        this.suggestionsList = newSuggestions;
+    }
+
+    // possible types: update, rename, delete. rename has oldPath
+    public onMetadataChange(type: string, file: TFile, oldPath?: string) {
+        // TODO handle efficiently with delta updates
+        this.buildNewIndex();
     }
 }

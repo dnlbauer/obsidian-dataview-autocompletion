@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { App, Plugin, PluginSettingTab, Setting, TFile } from "obsidian";
 import { DataviewSuggester } from "./DataviewSuggester";
 
 interface DataviewAutocompleteSettings {
@@ -19,6 +19,23 @@ export default class DataviewAutocompletePlugin extends Plugin {
         // register suggester
         this.suggester = new DataviewSuggester(this);
         this.registerEditorSuggest(this.suggester);
+
+        this.registerEvent(
+            // @ts-ignore
+            this.app.metadataCache.on("dataview:index-ready", () => {
+                this.suggester.buildNewIndex();
+            }),
+        );
+
+        this.registerEvent(
+            this.app.metadataCache.on(
+                // @ts-ignore
+                "dataview:metadata-change",
+                (type: string, file: TFile, oldPath?: string) => {
+                    this.suggester.onMetadataChange(type, file, oldPath);
+                },
+            ),
+        );
     }
 
     onunload() {}
