@@ -1,40 +1,47 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
-	"main": "main.js",
-	"scripts": {
-		"dev": "npx rollup --config rollup.config.js -w",
-		"build": "npx rollup --config rollup.config.js --environment BUILD:production",
-		"test": "npx jest",
-		"version": "node version-bump.mjs && git add manifest.json versions.json"
-	},
-	"keywords": [],
-	"author": "",
-	"license": "MIT",
-	"devDependencies": {
-		"@types/jest": "^29.5.14",
-		"@types/node": "^16.11.6",
-		"@typescript-eslint/eslint-plugin": "5.29.0",
-		"@typescript-eslint/parser": "5.29.0",
-		"babel-jest": "^29.7.0",
-		"builtin-modules": "3.3.0",
-		"esbuild": "0.17.3",
-		"obsidian": "latest",
-		"ts-jest": "^29.2.5",
-		"tslib": "2.4.0",
-		"typescript": "4.7.4"
-	},
-	"dependencies": {
-		"@rollup/plugin-commonjs": "^28.0.1",
-		"@rollup/plugin-node-resolve": "^15.3.0",
-		"rollup": "^2.79.2",
-		"rollup-plugin-copy": "^3.5.0",
-		"rollup-plugin-typescript2": "^0.36.0"
-	},
-	"jest": {
-		"transform": {
-			"^.+\\.(ts|tsx|js|jsx)$": "ts-jest"
-		}
-	}
+  "name": "obsidian-sample-plugin",
+  "version": "1.0.0",
+  "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+  "main": "main.js",
+  "scripts": {
+    "dev": "npx rollup --config rollup.config.js -w",
+    "build": "npx rollup --config rollup.config.js --environment BUILD:production",
+    "test": "npx jest",
+    "version": "node version-bump.mjs && git add manifest.json versions.json",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^16.11.6",
+    "@typescript-eslint/eslint-plugin": "5.29.0",
+    "@typescript-eslint/parser": "5.29.0",
+    "babel-jest": "^29.7.0",
+    "builtin-modules": "3.3.0",
+    "esbuild": "0.17.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "obsidian": "latest",
+    "prettier": "3.4.2",
+    "ts-jest": "^29.2.5",
+    "tslib": "2.4.0",
+    "typescript": "4.7.4"
+  },
+  "dependencies": {
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "rollup": "^2.79.2",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-typescript2": "^0.36.0"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.(ts|tsx|js|jsx)$": "ts-jest"
+    }
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  }
 }
