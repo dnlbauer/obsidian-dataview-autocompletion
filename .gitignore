@@ -20,3 +20,14 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+
+# test vault
+# Ignore .obsidian to prevent spamming git status
+test-vault/.obsidian/*
+# Tells obsidian what plugins are enabled
+!test-vault/.obsidian/community-plugins.json
+
+# Don't track this folder. For random things to try.
+# If its import to test though, add it somewhere where other
+# people can test it too.
+test-vault/untracked/*
