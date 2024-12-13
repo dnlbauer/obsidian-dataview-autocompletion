@@ -17,7 +17,7 @@ export default class DataviewAutocompletePlugin extends Plugin {
         await this.loadSettings();
 
         // register suggester
-        this.suggester = new DataviewSuggester(this);
+        this.suggester = new DataviewSuggester(this, 10, true, true);
         this.registerEditorSuggest(this.suggester);
 
         this.registerEvent(
