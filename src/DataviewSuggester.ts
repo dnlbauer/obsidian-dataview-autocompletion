@@ -13,10 +13,14 @@ import uFuzzy from "@leeoniya/ufuzzy";
 import { getAPI, DataviewApi } from "obsidian-dataview";
 
 export class DataviewSuggester extends EditorSuggest<String> {
-    suggestionsList: string[] = [];
     maxSuggestions: number;
     searcher: uFuzzy;
     dataviewApi: DataviewApi;
+
+    initialized: boolean = false;
+    suggestionsList: string[] = [];
+    suggestionsRefs: { [key: string]: string[] } = {}; // maps file paths to included suggestions
+    suggestionsRefCount: { [key: string]: number } = {}; // maps suggestions to number of files including them
 
     constructor(
         plugin: Plugin,
@@ -102,6 +106,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
 
     public onDataviewIndexReady() {
         this.buildNewIndex();
+        this.initialized = true;
     }
 
     // possible types: update, rename, delete. rename has oldPath
@@ -110,8 +115,13 @@ export class DataviewSuggester extends EditorSuggest<String> {
         file: TFile,
         oldPath?: string,
     ) {
-        // TODO handle efficiently with delta updates
-        this.buildNewIndex();
+        if (!this.initialized) {
+            console.log(
+                "Dataview Autocompletion index not ready yet. Skipping index update",
+            );
+            return;
+        }
+        this.updateIndex(type, file, oldPath);
     }
 
     /**
@@ -146,14 +156,15 @@ export class DataviewSuggester extends EditorSuggest<String> {
     buildNewIndex() {
         console.log("Begin Rebuilding dataview suggestion index");
         const startTime = performance.now();
-        const newSuggestions: string[] = [];
 
-        // Iterate all pages of the Dataview index, and ingest all fields into suggestions
-        // TODO: can we use official dataview api?
-        // @ts-ignore
-        for (const page of this.app.plugins.plugins.dataview.index.pages) {
-            const fields = page[1].fields;
-            for (let [key, val] of fields) {
+        const newSuggestions: string[] = [];
+        const newSuggestionsRefs: { [key: string]: string[] } = {};
+        const newSuggestionsRefCount: { [key: string]: number } = {};
+
+        for (const page of this.dataviewApi.index.pages) {
+            const pageRefs = [];
+
+            for (let [key, val] of page[1].fields) {
                 // fields can be a single value or a dict, so we need to handle both
                 let arrayVal;
                 if (!Array.isArray(val)) {
@@ -169,18 +180,106 @@ export class DataviewSuggester extends EditorSuggest<String> {
                     let compositeValue = this.formatCompositeValue(key, value);
 
                     if (newSuggestions.indexOf(compositeValue) === -1) {
+                        // suggestion not seen on any page yet
+                        pageRefs.push(compositeValue);
+                        newSuggestionsRefCount[compositeValue] = 1;
                         newSuggestions.push(compositeValue);
+                    } else if (pageRefs.indexOf(compositeValue) === -1) {
+                        // suggestion not seen on this page, but on another
+                        pageRefs.push(compositeValue);
+                        newSuggestionsRefCount[compositeValue] + -1;
                     }
                 }
             }
+            newSuggestionsRefs[page[0]] = pageRefs;
         }
 
         // replace old index
         this.suggestionsList = newSuggestions;
+        this.suggestionsRefCount = newSuggestionsRefCount;
+        this.suggestionsRefs = newSuggestionsRefs;
 
         const endTime = performance.now();
         console.log(
             `Rebuilt dataview autocomplete index (${this.suggestionsList.length} elements, ${(endTime - startTime).toFixed(2)}ms)`,
         );
+    }
+
+    updateIndex(type: string, file: TFile, oldPath?: string) {
+        // also triggers on create!
+        if (type === "update") {
+            const updateCompositeValues = [];
+
+            const page = this.dataviewApi.page(file.path);
+            const fields = Object.keys(page)
+                .filter((k) => k !== "file")
+                .map((k) => [k, page[k]]);
+            for (let [key, val] of fields) {
+                // fields can be a single value or a dict, so we need to handle both
+                let arrayVal;
+                if (!Array.isArray(val)) {
+                    arrayVal = [val];
+                } else {
+                    arrayVal = val;
+                }
+
+                for (const value of arrayVal) {
+                    if (value === null || value === undefined) continue; // skip empty fields
+
+                    let compositeValue = this.formatCompositeValue(key, value);
+                    if (updateCompositeValues.indexOf(compositeValue) === -1) {
+                        updateCompositeValues.push(compositeValue);
+                    }
+                }
+
+                for (const compositeValue of this.suggestionsRefs[file.path]) {
+                    if (updateCompositeValues.indexOf(compositeValue) === -1) {
+                        // delete value
+                        this.suggestionsRefCount[compositeValue] -= 1;
+                        if (this.suggestionsRefCount[compositeValue] == 0) {
+                            this.suggestionsList.splice(
+                                this.suggestionsList.indexOf(compositeValue),
+                                1,
+                            );
+                        }
+                    }
+                }
+                for (const newCompositeValue of updateCompositeValues) {
+                    if (
+                        this.suggestionsRefs[file.path].indexOf(
+                            newCompositeValue,
+                        ) === -1
+                    ) {
+                        // add value (also check presence in other files via refcount first)
+                        if (
+                            this.suggestionsList.indexOf(newCompositeValue) ===
+                            -1
+                        ) {
+                            this.suggestionsList.push(newCompositeValue);
+                            this.suggestionsRefCount[newCompositeValue] += 1;
+                        }
+                    }
+                }
+            }
+            this.suggestionsRefs[file.path] = updateCompositeValues;
+        } else if (type === "rename") {
+            this.suggestionsRefs[file.path] = this.suggestionsRefs[oldPath!];
+            delete this.suggestionsRefs[oldPath!];
+        } else if (type === "delete") {
+            // iterate suggestion refs in deleted file and decrement their ref count
+            // if the ref count reaches 0, remove the suggestion from the list
+            for (const value of this.suggestionsRefs[file.path]) {
+                this.suggestionsRefCount[value] -= 1;
+                if (this.suggestionsRefCount[value] == 0) {
+                    this.suggestionsList.splice(
+                        this.suggestionsList.indexOf(value),
+                        1,
+                    );
+                }
+            }
+            delete this.suggestionsRefs[file.path];
+        } else {
+            console.warn("Unknown update type:", type, file, oldPath);
+        }
     }
 }
