@@ -2,25 +2,19 @@ import { getTriggerText } from "./trigger";
 
 describe("trigger", () => {
     describe("empty", () => {
-        test("empty parantheses", () => {
-            expect(getTriggerText("() testing", 1)).toEqual(["", 1, 1]);
+        test("ignore empty parantheses", () => {
+            expect(getTriggerText("() testing", 1)).toEqual(null);
         });
-        test("empty square brackets", () => {
-            expect(getTriggerText("[] testing", 1)).toEqual(["", 1, 1]);
+        test("ignore empty square brackets", () => {
+            expect(getTriggerText("[] testing", 1)).toEqual(null);
         });
-        test("empty square brackets in text", () => {
-            expect(getTriggerText("test [] testing", 6)).toEqual(["", 6, 6]);
+        test("ignore empty square brackets in text", () => {
+            expect(getTriggerText("test [] testing", 6)).toEqual(null);
         });
-        // test("not match empty double square brackets", () => {
+        // Obsidian overrides these matches anyways
+        // test("ignore empty double square brackets", () => {
         //     expect(getTriggerText("[[]] testing", 2)).toEqual(null)
-        // })
-        test("multiple empty brackets in text", () => {
-            expect(getTriggerText("test [] and [] testing", 13)).toEqual([
-                "",
-                13,
-                13,
-            ]);
-        });
+        // });
     });
 
     describe("text in parantheses", () => {
