@@ -10,11 +10,13 @@ import {
 } from "obsidian";
 import { getTriggerText } from "./trigger";
 import uFuzzy from "@leeoniya/ufuzzy";
+import { getAPI, DataviewApi } from "obsidian-dataview";
 
 export class DataviewSuggester extends EditorSuggest<String> {
     suggestionsList: string[] = [];
     maxSuggestions: number;
     searcher: uFuzzy;
+    dataviewApi: DataviewApi;
 
     constructor(
         plugin: Plugin,
@@ -28,6 +30,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
             intraMode: singleErrorMode ? 1 : 0,
             intraIns: allowExtraChars ? 1 : 0,
         });
+        this.dataviewApi = getAPI(plugin.app);
     }
 
     onTrigger(
@@ -117,7 +120,29 @@ export class DataviewSuggester extends EditorSuggest<String> {
 
                 // Add composite value "key:: value" to suggestions list
                 for (const value of arrayVal) {
-                    const compositeValue = key + ":: " + value;
+                    if (value === null || value === undefined) continue; // skip empty fields
+
+                    // Convert value to string representation
+                    let stringValue: string;
+                    if (
+                        typeof value === "string" ||
+                        typeof value === "number" ||
+                        typeof value === "boolean"
+                    ) {
+                        stringValue = value.toString();
+                    } else if (
+                        this.dataviewApi.value.typeOf(value) === "link" &&
+                        value.type === "file" &&
+                        value.display !== undefined
+                    ) {
+                        // value.toString always adds a display value to wiki-style links.
+                        // parse wiki-style links without display value manually here to prevent this from happening for [[filename]]
+                        stringValue = `[[${value.path.split("/").pop().replace(".md", "")}]]`;
+                    } else {
+                        stringValue = this.dataviewApi.value.toString(value);
+                    }
+
+                    const compositeValue = `${key}:: ${stringValue}`;
                     if (newSuggestions.indexOf(compositeValue) === -1) {
                         newSuggestions.push(compositeValue);
                     }
