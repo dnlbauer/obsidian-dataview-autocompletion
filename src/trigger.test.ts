@@ -18,6 +18,9 @@ describe("trigger", () => {
     });
 
     describe("text in parantheses", () => {
+        test("alone", () => {
+            expect(getTriggerText("(capture)", 1)).toEqual(["capture", 1, 8]);
+        });
         test("text behind", () => {
             expect(getTriggerText("(capture) testing", 1)).toEqual([
                 "capture",
@@ -53,70 +56,94 @@ describe("trigger", () => {
                 13,
             ]);
         });
-        test("text and colon", () => {
-            expect(getTriggerText("(capture:) testing", 1)).toEqual([
-                "capture:",
-                1,
-                9,
-            ]);
+        test("with colon", () => {
+            expect(getTriggerText("(capture:)", 1)).toEqual(["capture:", 1, 9]);
         });
-        test("text and double colon", () => {
-            expect(getTriggerText("(capture::) testing", 1)).toEqual([
+        test("with double colon", () => {
+            expect(getTriggerText("(capture::)", 1)).toEqual([
                 "capture::",
                 1,
                 10,
             ]);
         });
         test("metadata field", () => {
-            expect(getTriggerText("(capture::Bob) testing", 1)).toEqual([
+            expect(getTriggerText("(capture::Bob)", 1)).toEqual([
                 "capture::Bob",
                 1,
                 13,
             ]);
         });
         test("metadata field with whitespace", () => {
-            expect(getTriggerText("(capture:: Bob) testing", 1)).toEqual([
+            expect(getTriggerText("(capture:: Bob)", 1)).toEqual([
                 "capture:: Bob",
                 1,
                 14,
             ]);
         });
         test("metadata field with more white space", () => {
-            expect(getTriggerText("(capture::   Bob) testing", 1)).toEqual([
+            expect(getTriggerText("(capture::   Bob)", 1)).toEqual([
                 "capture::   Bob",
                 1,
                 16,
             ]);
         });
-        test("text with markdown link", () => {
-            expect(getTriggerText("([[test]]) testing", 1)).toEqual([
-                "[[test]]",
+        test("double field", () => {
+            expect(getTriggerText("(capture1)(capture2)", 1)).toEqual([
+                "capture1",
                 1,
                 9,
             ]);
-        });
-        test("text with aliased markdown link", () => {
-            expect(getTriggerText("([[test|display]]) testing", 1)).toEqual([
-                "[[test|display]]",
-                1,
-                17,
+            expect(getTriggerText("(capture1)(capture2)", 11)).toEqual([
+                "capture2",
+                11,
+                19,
             ]);
         });
-        test("text with wiki link", () => {
-            expect(
-                getTriggerText("([[test](https://example.com)]) testing", 1),
-            ).toEqual(["[[test](https://example.com)]", 1, 30]);
-        });
-        test("text with wiki link local", () => {
-            expect(getTriggerText("([[test](test)]) testing", 1)).toEqual([
-                "[[test](test)]",
+        test("wiki link", () => {
+            expect(getTriggerText("(test [[test]])", 1)).toEqual([
+                "test [[test]]",
                 1,
-                15,
+                14,
+            ]);
+            expect(getTriggerText("(test [[test]])", 14)).toEqual([
+                "test [[test]]",
+                1,
+                14,
+            ]);
+        });
+        test("aliased wiki link", () => {
+            expect(getTriggerText("(test [[test|display]])", 1)).toEqual([
+                "test [[test|display]]",
+                1,
+                22,
+            ]);
+            expect(getTriggerText("(test [[test|display]])", 22)).toEqual([
+                "test [[test|display]]",
+                1,
+                22,
+            ]);
+        });
+
+        test("markdown link", () => {
+            expect(getTriggerText("([test](https://example.com))", 1)).toEqual([
+                "[test](https://example.com)",
+                1,
+                28,
+            ]);
+        });
+        test("markdown link local", () => {
+            expect(getTriggerText("([test](test))", 1)).toEqual([
+                "[test](test)",
+                1,
+                13,
             ]);
         });
     });
 
     describe("text in square brackets", () => {
+        test("alone", () => {
+            expect(getTriggerText("[capture]", 1)).toEqual(["capture", 1, 8]);
+        });
         test("text behind", () => {
             expect(getTriggerText("[capture] testing", 1)).toEqual([
                 "capture",
@@ -152,65 +179,85 @@ describe("trigger", () => {
                 13,
             ]);
         });
-        test("text and colon", () => {
-            expect(getTriggerText("[capture:] testing", 1)).toEqual([
-                "capture:",
-                1,
-                9,
-            ]);
+        test("with colon", () => {
+            expect(getTriggerText("[capture:]", 1)).toEqual(["capture:", 1, 9]);
         });
-        test("text and double colon", () => {
-            expect(getTriggerText("[capture::] testing", 1)).toEqual([
+        test("with double colon", () => {
+            expect(getTriggerText("[capture::]", 1)).toEqual([
                 "capture::",
                 1,
                 10,
             ]);
         });
         test("metadata field", () => {
-            expect(getTriggerText("[capture::Bob] testing", 1)).toEqual([
+            expect(getTriggerText("[capture::Bob]", 1)).toEqual([
                 "capture::Bob",
                 1,
                 13,
             ]);
         });
         test("metadata field with whitespace", () => {
-            expect(getTriggerText("[capture:: Bob] testing", 1)).toEqual([
+            expect(getTriggerText("[capture:: Bob]", 1)).toEqual([
                 "capture:: Bob",
                 1,
                 14,
             ]);
         });
         test("metadata field with more white space", () => {
-            expect(getTriggerText("[capture::   Bob] testing", 1)).toEqual([
+            expect(getTriggerText("[capture::   Bob]", 1)).toEqual([
                 "capture::   Bob",
                 1,
                 16,
             ]);
         });
-        test("text with markdown link", () => {
-            expect(getTriggerText("[[[test]]] testing", 1)).toEqual([
-                "[[test]]",
+        test("double field", () => {
+            expect(getTriggerText("[capture1][capture2]", 1)).toEqual([
+                "capture1",
                 1,
                 9,
             ]);
-        });
-        test("text with aliased markdown link", () => {
-            expect(getTriggerText("[[[test|display]]] testing", 1)).toEqual([
-                "[[test|display]]",
-                1,
-                17,
+            expect(getTriggerText("[capture1][capture2]", 11)).toEqual([
+                "capture2",
+                11,
+                19,
             ]);
         });
-        test("text with wiki link", () => {
-            expect(
-                getTriggerText("[[[test](https://example.com)]] testing", 1),
-            ).toEqual(["[[test](https://example.com)]", 1, 30]);
-        });
-        test("text with wiki link local", () => {
-            expect(getTriggerText("[[[test](test)]] testing", 1)).toEqual([
-                "[[test](test)]",
+        test("wiki link", () => {
+            expect(getTriggerText("[test [[test]]]", 1)).toEqual([
+                "test [[test]]",
                 1,
-                15,
+                14,
+            ]);
+            expect(getTriggerText("[test [[test]]]", 14)).toEqual([
+                "test [[test]]",
+                1,
+                14,
+            ]);
+        });
+        test("aliased wiki link", () => {
+            expect(getTriggerText("[test [[test|display]]]", 1)).toEqual([
+                "test [[test|display]]",
+                1,
+                22,
+            ]);
+            expect(getTriggerText("[test [[test|display]]]", 22)).toEqual([
+                "test [[test|display]]",
+                1,
+                22,
+            ]);
+        });
+        test("markdown link", () => {
+            expect(getTriggerText("[[test](https://example.com)]", 1)).toEqual([
+                "[test](https://example.com)",
+                1,
+                28,
+            ]);
+        });
+        test("markdown link local", () => {
+            expect(getTriggerText("[[test](test)]", 1)).toEqual([
+                "[test](test)",
+                1,
+                13,
             ]);
         });
     });
@@ -235,22 +282,20 @@ describe("trigger", () => {
 
     describe("ignore plain markdown links", () => {
         test("cursor in link text", () => {
-            expect(
-                getTriggerText("test [test](https://example.com)", 8),
-            ).toEqual(null);
-        });
-        test("cursor in link url", () => {
-            expect(
-                getTriggerText("test [test](https://example.com)", 15),
-            ).toEqual(null);
-        });
-        test("cursor in empty link text", () => {
-            expect(getTriggerText("test [](https://example.com)", 6)).toEqual(
+            expect(getTriggerText("[test](https://example.com)", 3)).toEqual(
                 null,
             );
         });
+        test("cursor in link url", () => {
+            expect(getTriggerText("[test](https://example.com)", 11)).toEqual(
+                null,
+            );
+        });
+        test("cursor in empty link text", () => {
+            expect(getTriggerText("[](https://example.com)", 1)).toEqual(null);
+        });
         test("cursor in empty link url", () => {
-            expect(getTriggerText("test [test]()", 12)).toEqual(null);
+            expect(getTriggerText("[test]()", 7)).toEqual(null);
         });
     });
 });
