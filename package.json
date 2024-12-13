@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-sample-plugin",
+  "name": "obsidian-dataview-autocompletion",
   "version": "1.0.0",
-  "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+  "description": "This is a plugin for Obsidian that provides autocompletion for Dataview metadata fields",
   "main": "main.js",
   "scripts": {
     "dev": "npx rollup --config rollup.config.js -w",
@@ -10,8 +10,18 @@
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "prepare": "husky"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "Obsidian",
+    "Dataview",
+    "autocompletion",
+    "suggestion",
+    "search",
+    "metadata"
+  ],
+  "author": {
+    "name": "Daniel Bauer",
+    "url": "https://dbauer.me"
+  },
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.14",
@@ -24,6 +34,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.2.11",
     "obsidian": "latest",
+    "obsidian-dataview": "^0.5.67",
     "prettier": "3.4.2",
     "ts-jest": "^29.2.5",
     "tslib": "2.4.0",
