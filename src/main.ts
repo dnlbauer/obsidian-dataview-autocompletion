@@ -23,7 +23,7 @@ export default class DataviewAutocompletePlugin extends Plugin {
         this.registerEvent(
             // @ts-ignore
             this.app.metadataCache.on("dataview:index-ready", () => {
-                this.suggester.buildNewIndex();
+                this.suggester.onDataviewIndexReady();
             }),
         );
 
@@ -32,7 +32,11 @@ export default class DataviewAutocompletePlugin extends Plugin {
                 // @ts-ignore
                 "dataview:metadata-change",
                 (type: string, file: TFile, oldPath?: string) => {
-                    this.suggester.onMetadataChange(type, file, oldPath);
+                    this.suggester.onDataviewMetadataChange(
+                        type,
+                        file,
+                        oldPath,
+                    );
                 },
             ),
         );

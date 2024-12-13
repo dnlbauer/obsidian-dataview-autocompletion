@@ -100,8 +100,52 @@ export class DataviewSuggester extends EditorSuggest<String> {
         editor.setCursor(newCursorPos);
     }
 
-    public buildNewIndex() {
-        console.log("Rebuilding dataview suggestion index");
+    public onDataviewIndexReady() {
+        this.buildNewIndex();
+    }
+
+    // possible types: update, rename, delete. rename has oldPath
+    public onDataviewMetadataChange(
+        type: string,
+        file: TFile,
+        oldPath?: string,
+    ) {
+        // TODO handle efficiently with delta updates
+        this.buildNewIndex();
+    }
+
+    /**
+     * Converts a Dataview value to a string
+     * returns the composite value in format "key:: value"
+     */
+    formatCompositeValue(key: string, value: any): string {
+        let stringValue: string;
+
+        // If the value is a string, number or boolean, we can simply convert it to a string
+        if (
+            typeof value === "string" ||
+            typeof value === "number" ||
+            typeof value === "boolean"
+        ) {
+            stringValue = value.toString();
+        } else if (
+            this.dataviewApi.value.typeOf(value) === "link" &&
+            value.type === "file" &&
+            value.display !== undefined
+        ) {
+            // value.toString always adds a display value to wiki-style links.
+            // parse wiki-style links without display value manually here to prevent this from happening for [[filename]]
+            stringValue = `[[${value.path.split("/").pop().replace(".md", "")}]]`;
+        } else {
+            stringValue = this.dataviewApi.value.toString(value);
+        }
+
+        return `${key}:: ${stringValue}`;
+    }
+
+    buildNewIndex() {
+        console.log("Begin Rebuilding dataview suggestion index");
+        const startTime = performance.now();
         const newSuggestions: string[] = [];
 
         // Iterate all pages of the Dataview index, and ingest all fields into suggestions
@@ -122,27 +166,8 @@ export class DataviewSuggester extends EditorSuggest<String> {
                 for (const value of arrayVal) {
                     if (value === null || value === undefined) continue; // skip empty fields
 
-                    // Convert value to string representation
-                    let stringValue: string;
-                    if (
-                        typeof value === "string" ||
-                        typeof value === "number" ||
-                        typeof value === "boolean"
-                    ) {
-                        stringValue = value.toString();
-                    } else if (
-                        this.dataviewApi.value.typeOf(value) === "link" &&
-                        value.type === "file" &&
-                        value.display !== undefined
-                    ) {
-                        // value.toString always adds a display value to wiki-style links.
-                        // parse wiki-style links without display value manually here to prevent this from happening for [[filename]]
-                        stringValue = `[[${value.path.split("/").pop().replace(".md", "")}]]`;
-                    } else {
-                        stringValue = this.dataviewApi.value.toString(value);
-                    }
+                    let compositeValue = this.formatCompositeValue(key, value);
 
-                    const compositeValue = `${key}:: ${stringValue}`;
                     if (newSuggestions.indexOf(compositeValue) === -1) {
                         newSuggestions.push(compositeValue);
                     }
@@ -152,11 +177,10 @@ export class DataviewSuggester extends EditorSuggest<String> {
 
         // replace old index
         this.suggestionsList = newSuggestions;
-    }
 
-    // possible types: update, rename, delete. rename has oldPath
-    public onMetadataChange(type: string, file: TFile, oldPath?: string) {
-        // TODO handle efficiently with delta updates
-        this.buildNewIndex();
+        const endTime = performance.now();
+        console.log(
+            `Rebuilt dataview autocomplete index (${this.suggestionsList.length} elements, ${(endTime - startTime).toFixed(2)}ms)`,
+        );
     }
 }
