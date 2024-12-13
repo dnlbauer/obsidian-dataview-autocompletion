@@ -1,15 +1,4 @@
 /**
- * Matches single square bracket pair [] or parahtheses (), but not a double square bracket pair [[]]
- * (?<!\[)     # Negative lookbehind to make sure there is no second [
- * \[]         # Matches []
- * (?![\]\(])  # Negative lookahead to make sure there is no second closing ] from wiki link or opening ( from a markdown link
- * |           # OR
- * (?<!\])     # Negative lookbehind to make sure there is no closing ] from a markdown link
- * \(\)        # Matches ()
- */
-const emptyRegex = /(?<!\[)\[](?![\]\(])|(?<!\])\(\)/g;
-
-/**
  * Maches single square brackets or parantheses with some text in them
  * and captures the text
  * If the brackets start a wiki link or markdown link, they are ignored
@@ -38,38 +27,9 @@ export function getTriggerText(
     line: string,
     cursorPos: number,
 ): [string, number, number] | null {
-    // Check for empty [] or ().
-    // If the user starts typing with no text in the field, this is the fastest way to find it.
-    let match = getEmptyTrigger(line, cursorPos);
-    if (match) {
-        return match;
-    }
-
-    // If the user types inside an existing field, this is the function to find it.
-    match = getTriggerTextFromRegex(line, cursorPos, filledRegex);
+    let match = getTriggerTextFromRegex(line, cursorPos, filledRegex);
     if (match !== null) {
         return match;
-    }
-    return null;
-}
-
-/**
- * Matches an empty [] or empty (), but not [[]]
- * Has its own function since there is no capture group resulting in a different index calculation
- */
-function getEmptyTrigger(
-    line: string,
-    cursorPos: number,
-): [string, number, number] | null {
-    let matches = Array.from(line.matchAll(emptyRegex));
-    for (const match of matches) {
-        if (match.index === undefined) {
-            continue;
-        }
-
-        if (cursorPos === match.index + 1) {
-            return ["", match.index + 1, match.index + 1];
-        }
     }
     return null;
 }
