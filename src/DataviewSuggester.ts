@@ -13,10 +13,21 @@ import uFuzzy from "@leeoniya/ufuzzy";
 
 export class DataviewSuggester extends EditorSuggest<String> {
     suggestionsList: string[] = [];
-    searcher: uFuzzy = new uFuzzy({});
+    maxSuggestions: number;
+    searcher: uFuzzy;
 
-    constructor(plugin: Plugin) {
+    constructor(
+        plugin: Plugin,
+        maxSuggestions: number = 10,
+        singleErrorMode: boolean = false,
+        allowExtraChars: boolean = false,
+    ) {
         super(plugin.app);
+        this.maxSuggestions = maxSuggestions;
+        this.searcher = new uFuzzy({
+            intraMode: singleErrorMode ? 1 : 0,
+            intraIns: allowExtraChars ? 1 : 0,
+        });
     }
 
     onTrigger(
@@ -53,17 +64,30 @@ export class DataviewSuggester extends EditorSuggest<String> {
                 context.query,
             );
 
-            return order.map((i) => this.suggestionsList[info.idx[i]]);
+            // return top N suggestions with marks
+            return order
+                .slice(0, this.maxSuggestions)
+                .map((idx) => [idx, this.suggestionsList[info.idx[idx]]])
+                .map((suggestion: [number, string]) =>
+                    uFuzzy.highlight(suggestion[1], info.ranges[suggestion[0]]),
+                );
         }
         return [];
     }
 
     renderSuggestion(value: string, el: HTMLElement): void {
-        el.setText(value);
+        // replace marks with bold
+        const formattedHtml = value.replace(
+            /<mark>(.*?)<\/mark>/g,
+            '<span style="font-weight: bold;">$1</span>',
+        );
+        el.innerHTML = formattedHtml;
     }
 
     selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
         const { editor, start, end } = this.context!;
+        // remove marks from selection
+        value = value.replace(/<mark>(.*?)<\/mark>/g, "$1");
         editor.replaceRange(value, start, end);
 
         const newCursorPos = {
