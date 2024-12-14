@@ -53,7 +53,6 @@ export function getTriggerText(line: string, cursorPos: number): [string, number
 function getTriggerTextFromRegex(line: string, cursorPos: number, regex: RegExp): [string, number, number] | null {
     let matches = Array.from(line.matchAll(regex));
     for (const match of matches) {
-        console.warn(match);
         if (match.index === undefined) {
             continue;
         }

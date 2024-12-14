@@ -15,7 +15,6 @@ import { getAPI, DataviewApi } from "obsidian-dataview";
 export class DataviewSuggester extends EditorSuggest<String> {
     maxSuggestions: number;
     searcher: uFuzzy;
-    dataviewApi: DataviewApi;
 
     initialized: boolean = false;
     suggestionsList: string[] = [];
@@ -34,7 +33,6 @@ export class DataviewSuggester extends EditorSuggest<String> {
             intraMode: singleErrorMode ? 1 : 0,
             intraIns: allowExtraChars ? 1 : 0,
         });
-        this.dataviewApi = getAPI(plugin.app);
     }
 
     onTrigger(cursor: EditorPosition, editor: Editor, file: TFile): EditorSuggestTriggerInfo | null {
@@ -93,7 +91,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
     // possible types: update, rename, delete. rename has oldPath
     public onDataviewMetadataChange(type: string, file: TFile, oldPath?: string) {
         if (!this.initialized) {
-            console.log("Dataview Autocompletion index not ready yet. Skipping index update");
+            // console.warn("Dataview Autocompletion index not ready yet. Skipping index update");
             return;
         }
         this.updateIndex(type, file, oldPath);
@@ -104,21 +102,19 @@ export class DataviewSuggester extends EditorSuggest<String> {
      * returns the composite value in format "key:: value"
      */
     formatCompositeValue(key: string, value: any): string {
+        const dataviewAPI = getAPI(this.app);
+
         let stringValue: string;
 
         // If the value is a string, number or boolean, we can simply convert it to a string
         if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
             stringValue = value.toString();
-        } else if (
-            this.dataviewApi.value.typeOf(value) === "link" &&
-            value.type === "file" &&
-            value.display !== undefined
-        ) {
+        } else if (dataviewAPI.value.typeOf(value) === "link" && value.type === "file" && value.display !== undefined) {
             // value.toString always adds a display value to wiki-style links.
             // parse wiki-style links without display value manually here to prevent this from happening for [[filename]]
             stringValue = `[[${value.path.split("/").pop().replace(".md", "")}]]`;
         } else {
-            stringValue = this.dataviewApi.value.toString(value);
+            stringValue = dataviewAPI.value.toString(value);
         }
 
         return `${key}:: ${stringValue}`;
@@ -127,15 +123,22 @@ export class DataviewSuggester extends EditorSuggest<String> {
     buildNewIndex() {
         console.log("Begin Rebuilding dataview suggestion index");
         const startTime = performance.now();
+        const dataviewApi = getAPI(this.app);
 
         const newSuggestions: string[] = [];
         const newSuggestionsRefs: { [key: string]: string[] } = {};
         const newSuggestionsRefCount: { [key: string]: number } = {};
 
-        for (const page of this.dataviewApi.index.pages) {
+        const files = this.app.vault.getFiles();
+        for (const file of files) {
+            const page = dataviewApi.page(file.path);
+            const fields = Object.keys(page)
+                .filter((k) => k !== "file")
+                .map((k) => [k, page[k]]);
+
             const pageRefs = [];
 
-            for (let [key, val] of page[1].fields) {
+            for (let [key, val] of fields) {
                 // fields can be a single value or a dict, so we need to handle both
                 let arrayVal;
                 if (!Array.isArray(val)) {
@@ -162,7 +165,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
                     }
                 }
             }
-            newSuggestionsRefs[page[0]] = pageRefs;
+            newSuggestionsRefs[file.path] = pageRefs;
         }
 
         // replace old index
@@ -181,7 +184,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
         if (type === "update") {
             const updateCompositeValues = [];
 
-            const page = this.dataviewApi.page(file.path);
+            const page = getAPI(this.app).page(file.path);
             const fields = Object.keys(page)
                 .filter((k) => k !== "file")
                 .map((k) => [k, page[k]]);
@@ -202,7 +205,6 @@ export class DataviewSuggester extends EditorSuggest<String> {
                         updateCompositeValues.push(compositeValue);
                     }
                 }
-
                 for (const compositeValue of this.suggestionsRefs[file.path]) {
                     if (updateCompositeValues.indexOf(compositeValue) === -1) {
                         // delete value

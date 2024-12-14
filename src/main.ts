@@ -1,5 +1,6 @@
 import { App, Plugin, PluginSettingTab, Setting, TFile } from "obsidian";
 import { DataviewSuggester } from "./DataviewSuggester";
+import { getAPI } from "obsidian-dataview";
 
 interface DataviewAutocompleteSettings {
     // mySetting: string;
@@ -15,10 +16,6 @@ export default class DataviewAutocompletePlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
-
-        // register suggester
-        this.suggester = new DataviewSuggester(this, 10, true, true);
-        this.registerEditorSuggest(this.suggester);
 
         this.registerEvent(
             // @ts-ignore
@@ -36,6 +33,18 @@ export default class DataviewAutocompletePlugin extends Plugin {
                 },
             ),
         );
+
+        this.app.workspace.onLayoutReady(() => {
+            // @ts-ignore
+            if (!Object.keys(this.app.plugins.plugins).includes("dataview")) {
+                console.warn("Dataview plugin not installed. Dataview Autocompletion plugin will not work.");
+            } else {
+                // register suggester, requires dataview to be loaded first.
+                console.log("Registering dataview autocompletion suggester");
+                this.suggester = new DataviewSuggester(this, 10, true, true);
+                this.registerEditorSuggest(this.suggester);
+            }
+        });
     }
 
     onunload() {}
