@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS: DataviewAutocompleteSettings = {
 
 export default class DataviewAutocompletePlugin extends Plugin {
     settings: DataviewAutocompleteSettings;
-    suggester: DataviewSuggester;
+    suggester: DataviewSuggester | undefined;
 
     async onload() {
         await this.loadSettings();
