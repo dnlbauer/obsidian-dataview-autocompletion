@@ -138,6 +138,9 @@ describe("trigger", () => {
                 13,
             ]);
         });
+        test("nested parantheses", () => {
+            expect(getTriggerText("((test))", 1)).toEqual(["(test)", 1, 7]);
+        });
     });
 
     describe("text in square brackets", () => {
@@ -259,6 +262,9 @@ describe("trigger", () => {
                 1,
                 13,
             ]);
+        });
+        test("nested parantheses", () => {
+            expect(getTriggerText("[(test)]", 1)).toEqual(["(test)", 1, 7]);
         });
     });
 

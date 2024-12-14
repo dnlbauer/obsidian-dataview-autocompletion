@@ -1,21 +1,33 @@
 /**
- * Maches single square brackets or parantheses with some text in them
- * and captures the text
- * If the brackets start a wiki link or markdown link, they are ignored
- * but links inside another layer of brackets are returned:
- *
- * (
- *   (?<=^\(|\s\()   # Pattern for parantheses
- *     .+?:{0,2}.*?
- *   (?=\)$|\)\s)
- *   |
- *   (?<=^\[|\s\[)   # Pattern for square brackets
- *     .+?:{0,2}.*?
- *   (?=\]$|\]\s)
- * )
+ * Maches parantheses or single square brackets or parantheses
+ * and captures the enclosed text
+ * If the brackets start a markdown link, they are ignored.
+ * Wiki links don't need to be ignored since Obsidian overwrites suggestions for them.
  */
-const filledRegex =
-    /((?<=^\(|\s\().+?:{0,2}.*?(?=\)$|\)\s)|(?<=^\[|\s\[).+?:{0,2}.*?(?=\]$|\]\s))/g;
+const filledRegex = new RegExp(
+    "(" +
+        [
+            // pattern for parantheses
+            // pos. lookbehind for opening parantheses; no closing square bracket before to exlude markdown links
+            /(?<=^\(|[^\]]\()/,
+            /.+?/,
+            // pos. lookahead for closing paranthesis; not followed by another one for nested ((test))
+            /(?=\)$|\)[^\)])/,
+
+            /|/,
+
+            // pattern for square brackets
+            // pos. lookbehind for opening square bracket
+            /(?<=\[)/,
+            /.+?/,
+            // pos. lookahead for closing bracket; not followed by another one ([[test]]) or an opening paranthese (markdown link!)
+            /(?=\]$|\][^\]\(])/,
+        ]
+            .map((s) => s.source)
+            .join("") +
+        ")",
+    "g",
+);
 
 /**
  * Finds the dataview metadata field the user is currently inside.
@@ -48,6 +60,7 @@ function getTriggerTextFromRegex(
 ): [string, number, number] | null {
     let matches = Array.from(line.matchAll(regex));
     for (const match of matches) {
+        console.warn(match);
         if (match.index === undefined) {
             continue;
         }
