@@ -35,10 +35,7 @@ const filledRegex = new RegExp(
  * and start and end are the cursor positions of the start and end of the field.
  * If the user is not inside a field, it returns null.
  */
-export function getTriggerText(
-    line: string,
-    cursorPos: number,
-): [string, number, number] | null {
+export function getTriggerText(line: string, cursorPos: number): [string, number, number] | null {
     let match = getTriggerTextFromRegex(line, cursorPos, filledRegex);
     if (match !== null) {
         return match;
@@ -53,11 +50,7 @@ export function getTriggerText(
  * start is the position of the start of the match, and end is the position of the end of the match.
  * Otherwise, returns null.
  */
-function getTriggerTextFromRegex(
-    line: string,
-    cursorPos: number,
-    regex: RegExp,
-): [string, number, number] | null {
+function getTriggerTextFromRegex(line: string, cursorPos: number, regex: RegExp): [string, number, number] | null {
     let matches = Array.from(line.matchAll(regex));
     for (const match of matches) {
         console.warn(match);

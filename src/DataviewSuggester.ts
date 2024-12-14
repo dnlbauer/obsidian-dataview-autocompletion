@@ -37,11 +37,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
         this.dataviewApi = getAPI(plugin.app);
     }
 
-    onTrigger(
-        cursor: EditorPosition,
-        editor: Editor,
-        file: TFile,
-    ): EditorSuggestTriggerInfo | null {
+    onTrigger(cursor: EditorPosition, editor: Editor, file: TFile): EditorSuggestTriggerInfo | null {
         const line = editor.getLine(cursor.line);
 
         let trigger = getTriggerText(line, cursor.ch);
@@ -55,39 +51,24 @@ export class DataviewSuggester extends EditorSuggest<String> {
         return null;
     }
 
-    getSuggestions(
-        context: EditorSuggestContext,
-    ): string[] | Promise<string[]> {
+    getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
         let idxs = this.searcher.filter(this.suggestionsList, context.query);
         if (idxs != null && idxs.length > 0) {
-            let info = this.searcher.info(
-                idxs,
-                this.suggestionsList,
-                context.query,
-            );
-            let order = this.searcher.sort(
-                info,
-                this.suggestionsList,
-                context.query,
-            );
+            let info = this.searcher.info(idxs, this.suggestionsList, context.query);
+            let order = this.searcher.sort(info, this.suggestionsList, context.query);
 
             // return top N suggestions with marks
             return order
                 .slice(0, this.maxSuggestions)
                 .map((idx) => [idx, this.suggestionsList[info.idx[idx]]])
-                .map((suggestion: [number, string]) =>
-                    uFuzzy.highlight(suggestion[1], info.ranges[suggestion[0]]),
-                );
+                .map((suggestion: [number, string]) => uFuzzy.highlight(suggestion[1], info.ranges[suggestion[0]]));
         }
         return [];
     }
 
     renderSuggestion(value: string, el: HTMLElement): void {
         // replace marks with bold
-        const formattedHtml = value.replace(
-            /<mark>(.*?)<\/mark>/g,
-            '<span style="font-weight: bold;">$1</span>',
-        );
+        const formattedHtml = value.replace(/<mark>(.*?)<\/mark>/g, '<span style="font-weight: bold;">$1</span>');
         el.innerHTML = formattedHtml;
     }
 
@@ -110,15 +91,9 @@ export class DataviewSuggester extends EditorSuggest<String> {
     }
 
     // possible types: update, rename, delete. rename has oldPath
-    public onDataviewMetadataChange(
-        type: string,
-        file: TFile,
-        oldPath?: string,
-    ) {
+    public onDataviewMetadataChange(type: string, file: TFile, oldPath?: string) {
         if (!this.initialized) {
-            console.log(
-                "Dataview Autocompletion index not ready yet. Skipping index update",
-            );
+            console.log("Dataview Autocompletion index not ready yet. Skipping index update");
             return;
         }
         this.updateIndex(type, file, oldPath);
@@ -132,11 +107,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
         let stringValue: string;
 
         // If the value is a string, number or boolean, we can simply convert it to a string
-        if (
-            typeof value === "string" ||
-            typeof value === "number" ||
-            typeof value === "boolean"
-        ) {
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
             stringValue = value.toString();
         } else if (
             this.dataviewApi.value.typeOf(value) === "link" &&
@@ -237,24 +208,14 @@ export class DataviewSuggester extends EditorSuggest<String> {
                         // delete value
                         this.suggestionsRefCount[compositeValue] -= 1;
                         if (this.suggestionsRefCount[compositeValue] == 0) {
-                            this.suggestionsList.splice(
-                                this.suggestionsList.indexOf(compositeValue),
-                                1,
-                            );
+                            this.suggestionsList.splice(this.suggestionsList.indexOf(compositeValue), 1);
                         }
                     }
                 }
                 for (const newCompositeValue of updateCompositeValues) {
-                    if (
-                        this.suggestionsRefs[file.path].indexOf(
-                            newCompositeValue,
-                        ) === -1
-                    ) {
+                    if (this.suggestionsRefs[file.path].indexOf(newCompositeValue) === -1) {
                         // add value (also check presence in other files via refcount first)
-                        if (
-                            this.suggestionsList.indexOf(newCompositeValue) ===
-                            -1
-                        ) {
+                        if (this.suggestionsList.indexOf(newCompositeValue) === -1) {
                             this.suggestionsList.push(newCompositeValue);
                             this.suggestionsRefCount[newCompositeValue] += 1;
                         }
@@ -271,10 +232,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
             for (const value of this.suggestionsRefs[file.path]) {
                 this.suggestionsRefCount[value] -= 1;
                 if (this.suggestionsRefCount[value] == 0) {
-                    this.suggestionsList.splice(
-                        this.suggestionsList.indexOf(value),
-                        1,
-                    );
+                    this.suggestionsList.splice(this.suggestionsList.indexOf(value), 1);
                 }
             }
             delete this.suggestionsRefs[file.path];

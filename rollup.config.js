@@ -9,9 +9,7 @@ const BASE_CONFIG = {
 };
 
 const getRollupPlugins = (tsconfig, ...plugins) =>
-    [typescript2(tsconfig), nodeResolve({ browser: true }), commonjs()].concat(
-        plugins,
-    );
+    [typescript2(tsconfig), nodeResolve({ browser: true }), commonjs()].concat(plugins);
 
 const DEV_PLUGIN_CONFIG = {
     ...BASE_CONFIG,

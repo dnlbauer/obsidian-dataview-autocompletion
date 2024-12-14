@@ -32,11 +32,7 @@ export default class DataviewAutocompletePlugin extends Plugin {
                 // @ts-ignore
                 "dataview:metadata-change",
                 (type: string, file: TFile, oldPath?: string) => {
-                    this.suggester.onDataviewMetadataChange(
-                        type,
-                        file,
-                        oldPath,
-                    );
+                    this.suggester.onDataviewMetadataChange(type, file, oldPath);
                 },
             ),
         );
@@ -45,11 +41,7 @@ export default class DataviewAutocompletePlugin extends Plugin {
     onunload() {}
 
     async loadSettings() {
-        this.settings = Object.assign(
-            {},
-            DEFAULT_SETTINGS,
-            await this.loadData(),
-        );
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     }
 
     async saveSettings() {
