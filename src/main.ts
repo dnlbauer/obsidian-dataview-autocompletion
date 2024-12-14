@@ -3,11 +3,11 @@ import { DataviewSuggester } from "./DataviewSuggester";
 import { getAPI } from "obsidian-dataview";
 
 interface DataviewAutocompleteSettings {
-    // mySetting: string;
+    ignoredFields: string[];
 }
 
 const DEFAULT_SETTINGS: DataviewAutocompleteSettings = {
-    // mySetting: 'default'
+    ignoredFields: [],
 };
 
 export default class DataviewAutocompletePlugin extends Plugin {
@@ -20,7 +20,9 @@ export default class DataviewAutocompletePlugin extends Plugin {
         this.registerEvent(
             // @ts-ignore
             this.app.metadataCache.on("dataview:index-ready", () => {
-                this.suggester.onDataviewIndexReady();
+                if (this.suggester !== undefined) {
+                    this.suggester.onDataviewIndexReady();
+                }
             }),
         );
 
@@ -29,7 +31,9 @@ export default class DataviewAutocompletePlugin extends Plugin {
                 // @ts-ignore
                 "dataview:metadata-change",
                 (type: string, file: TFile, oldPath?: string) => {
-                    this.suggester.onDataviewMetadataChange(type, file, oldPath);
+                    if (this.suggester !== undefined) {
+                        this.suggester.onDataviewMetadataChange(type, file, oldPath);
+                    }
                 },
             ),
         );
