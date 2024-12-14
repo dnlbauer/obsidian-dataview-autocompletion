@@ -1,13 +1,14 @@
 import { App, Plugin, PluginSettingTab, Setting, TFile } from "obsidian";
 import { DataviewSuggester } from "./DataviewSuggester";
 import { getAPI } from "obsidian-dataview";
+import { SettingsTab } from "./SettingsTab";
 
 interface DataviewAutocompleteSettings {
     ignoredFields: string[];
 }
 
 const DEFAULT_SETTINGS: DataviewAutocompleteSettings = {
-    ignoredFields: [],
+    ignoredFields: ["created.*", "modified.*", "date"],
 };
 
 export default class DataviewAutocompletePlugin extends Plugin {
@@ -16,6 +17,7 @@ export default class DataviewAutocompletePlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
+        this.addSettingTab(new SettingsTab(this.app, this));
 
         this.registerEvent(
             // @ts-ignore

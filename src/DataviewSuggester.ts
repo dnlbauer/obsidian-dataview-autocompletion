@@ -1,7 +1,6 @@
 import {
     App,
     Editor,
-    Plugin,
     EditorPosition,
     EditorSuggest,
     EditorSuggestContext,
@@ -11,8 +10,11 @@ import {
 import { getTriggerText } from "./trigger";
 import uFuzzy from "@leeoniya/ufuzzy";
 import { getAPI, DataviewApi } from "obsidian-dataview";
+import DataviewAutocompletePlugin from "./main";
 
 export class DataviewSuggester extends EditorSuggest<String> {
+    plugin: DataviewAutocompletePlugin;
+
     maxSuggestions: number;
     searcher: uFuzzy;
 
@@ -22,12 +24,13 @@ export class DataviewSuggester extends EditorSuggest<String> {
     suggestionsRefCount: { [key: string]: number } = {}; // maps suggestions to number of files including them
 
     constructor(
-        plugin: Plugin,
+        plugin: DataviewAutocompletePlugin,
         maxSuggestions: number = 10,
         singleErrorMode: boolean = false,
         allowExtraChars: boolean = false,
     ) {
         super(plugin.app);
+        this.plugin = plugin;
         this.maxSuggestions = maxSuggestions;
         this.searcher = new uFuzzy({
             intraMode: singleErrorMode ? 1 : 0,
@@ -50,15 +53,26 @@ export class DataviewSuggester extends EditorSuggest<String> {
     }
 
     getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
-        let idxs = this.searcher.filter(this.suggestionsList, context.query);
+        // TODO: add filter at index-time?
+        let filtered = this.suggestionsList;
+        for (const filterPattern of this.plugin.settings.ignoredFields) {
+            const regex = new RegExp(`^(${filterPattern})::.*`);
+            const ignoredSuggestions = filtered.filter((suggestion) => regex.test(suggestion));
+            // minimatch.match(filtered, filterPattern + ":: *", { partial: true })
+            for (const ignoredSuggestion of ignoredSuggestions) {
+                filtered = filtered.slice(filtered.indexOf(ignoredSuggestion) + 1);
+            }
+        }
+
+        const idxs = this.searcher.filter(filtered, context.query);
         if (idxs != null && idxs.length > 0) {
-            let info = this.searcher.info(idxs, this.suggestionsList, context.query);
-            let order = this.searcher.sort(info, this.suggestionsList, context.query);
+            let info = this.searcher.info(idxs, filtered, context.query);
+            let order = this.searcher.sort(info, filtered, context.query);
 
             // return top N suggestions with marks
             return order
                 .slice(0, this.maxSuggestions)
-                .map((idx) => [idx, this.suggestionsList[info.idx[idx]]])
+                .map((idx) => [idx, filtered[info.idx[idx]]])
                 .map((suggestion: [number, string]) => uFuzzy.highlight(suggestion[1], info.ranges[suggestion[0]]));
         }
         return [];
