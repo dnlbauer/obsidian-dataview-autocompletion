@@ -20,8 +20,8 @@ export class DataviewSuggester extends EditorSuggest<String> {
 
     initialized: boolean = false;
     suggestionsList: string[] = [];
-    suggestionsRefs: { [key: string]: string[] } = {}; // maps file paths to included suggestions
-    suggestionsRefCount: { [key: string]: number } = {}; // maps suggestions to number of files including them
+    suggestionsRefs: Map<string, string[]> = new Map(); // maps file paths to included suggestions
+    suggestionsRefCount: Map<string, number> = new Map(); // maps suggestions to number of files including them
 
     constructor(
         plugin: DataviewAutocompletePlugin,
@@ -140,8 +140,8 @@ export class DataviewSuggester extends EditorSuggest<String> {
         const dataviewApi = getAPI(this.app);
 
         const newSuggestions: string[] = [];
-        const newSuggestionsRefs: { [key: string]: string[] } = {};
-        const newSuggestionsRefCount: { [key: string]: number } = {};
+        const newSuggestionsRefs: Map<string, string[]> = new Map();
+        const newSuggestionsRefCount: Map<string, number> = new Map();
 
         const files = this.app.vault.getFiles();
         for (const file of files) {
@@ -170,16 +170,16 @@ export class DataviewSuggester extends EditorSuggest<String> {
                     if (newSuggestions.indexOf(compositeValue) === -1) {
                         // suggestion not seen on any page yet
                         pageRefs.push(compositeValue);
-                        newSuggestionsRefCount[compositeValue] = 1;
+                        newSuggestionsRefCount.set(compositeValue, 1);
                         newSuggestions.push(compositeValue);
                     } else if (pageRefs.indexOf(compositeValue) === -1) {
                         // suggestion not seen on this page, but on another
                         pageRefs.push(compositeValue);
-                        newSuggestionsRefCount[compositeValue] + -1;
+                        newSuggestionsRefCount.set(compositeValue, newSuggestionsRefCount.get(compositeValue)! - 1);
                     }
                 }
             }
-            newSuggestionsRefs[file.path] = pageRefs;
+            newSuggestionsRefs.set(file.path, pageRefs);
         }
 
         // replace old index
@@ -196,6 +196,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
     updateIndex(type: string, file: TFile, oldPath?: string) {
         // also triggers on create!
         if (type === "update") {
+            console.debug("update index", file);
             const updateCompositeValues = [];
 
             const page = getAPI(this.app).page(file.path);
@@ -219,39 +220,56 @@ export class DataviewSuggester extends EditorSuggest<String> {
                         updateCompositeValues.push(compositeValue);
                     }
                 }
-                for (const compositeValue of this.suggestionsRefs[file.path]) {
-                    if (updateCompositeValues.indexOf(compositeValue) === -1) {
-                        // delete value
-                        this.suggestionsRefCount[compositeValue] -= 1;
-                        if (this.suggestionsRefCount[compositeValue] == 0) {
-                            this.suggestionsList.splice(this.suggestionsList.indexOf(compositeValue), 1);
-                        }
-                    }
-                }
-                for (const newCompositeValue of updateCompositeValues) {
-                    if (this.suggestionsRefs[file.path].indexOf(newCompositeValue) === -1) {
-                        // add value (also check presence in other files via refcount first)
-                        if (this.suggestionsList.indexOf(newCompositeValue) === -1) {
-                            this.suggestionsList.push(newCompositeValue);
-                            this.suggestionsRefCount[newCompositeValue] += 1;
-                        }
+            }
+
+            const oldCompositeValues = this.suggestionsRefs.get(file.path)!;
+
+            // deleting value from index if update reduces refcount to 0
+            for (const oldCompositeValue of oldCompositeValues) {
+                if (updateCompositeValues.indexOf(oldCompositeValue) === -1) {
+                    // delete value
+                    this.suggestionsRefCount.set(
+                        oldCompositeValue,
+                        this.suggestionsRefCount.get(oldCompositeValue)! - 1,
+                    );
+                    if (this.suggestionsRefCount.get(oldCompositeValue) === 0) {
+                        console.debug("deleting value from suggestion index", oldCompositeValue);
+                        this.suggestionsList.splice(this.suggestionsList.indexOf(oldCompositeValue), 1);
                     }
                 }
             }
-            this.suggestionsRefs[file.path] = updateCompositeValues;
+
+            // adding value to index if not present in index
+            for (const newCompositeValue of updateCompositeValues) {
+                if (oldCompositeValues.indexOf(newCompositeValue) === -1) {
+                    // add value (also check presence in other files via refcount first)
+                    if (!this.suggestionsRefCount.has(newCompositeValue)) {
+                        console.debug("adding value from suggestion index", newCompositeValue);
+                        this.suggestionsList.push(newCompositeValue);
+                        this.suggestionsRefCount.set(newCompositeValue, 1);
+                    } else {
+                        this.suggestionsRefCount.set(
+                            newCompositeValue,
+                            this.suggestionsRefCount.get(newCompositeValue)! + 1,
+                        );
+                    }
+                }
+            }
+            this.suggestionsRefs.set(file.path, updateCompositeValues);
         } else if (type === "rename") {
-            this.suggestionsRefs[file.path] = this.suggestionsRefs[oldPath!];
-            delete this.suggestionsRefs[oldPath!];
+            this.suggestionsRefs.set(file.path, this.suggestionsRefs.get(oldPath!)!);
+            this.suggestionsRefs.delete(oldPath!);
         } else if (type === "delete") {
             // iterate suggestion refs in deleted file and decrement their ref count
             // if the ref count reaches 0, remove the suggestion from the list
-            for (const value of this.suggestionsRefs[file.path]) {
-                this.suggestionsRefCount[value] -= 1;
-                if (this.suggestionsRefCount[value] == 0) {
+            for (const value of this.suggestionsRefs.get(file.path)!) {
+                this.suggestionsRefCount.set(value, this.suggestionsRefCount.get(value)! - 1);
+                if (this.suggestionsRefCount.get(value) === 0) {
+                    console.debug("deleting value from suggestion index", value);
                     this.suggestionsList.splice(this.suggestionsList.indexOf(value), 1);
                 }
             }
-            delete this.suggestionsRefs[file.path];
+            this.suggestionsRefs.delete(file.path);
         } else {
             console.warn("Unknown update type:", type, file, oldPath);
         }
