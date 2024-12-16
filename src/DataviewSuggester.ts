@@ -53,26 +53,15 @@ export class DataviewSuggester extends EditorSuggest<String> {
     }
 
     getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
-        // TODO: add filter at index-time?
-        let filtered = this.suggestionsList;
-        for (const filterPattern of this.plugin.settings.ignoredFields) {
-            const regex = new RegExp(`^(${filterPattern})::.*`);
-            const ignoredSuggestions = filtered.filter((suggestion) => regex.test(suggestion));
-            // minimatch.match(filtered, filterPattern + ":: *", { partial: true })
-            for (const ignoredSuggestion of ignoredSuggestions) {
-                filtered = filtered.slice(filtered.indexOf(ignoredSuggestion) + 1);
-            }
-        }
-
-        const idxs = this.searcher.filter(filtered, context.query);
+        const idxs = this.searcher.filter(this.suggestionsList, context.query);
         if (idxs != null && idxs.length > 0) {
-            let info = this.searcher.info(idxs, filtered, context.query);
-            let order = this.searcher.sort(info, filtered, context.query);
+            let info = this.searcher.info(idxs, this.suggestionsList, context.query);
+            let order = this.searcher.sort(info, this.suggestionsList, context.query);
 
             // return top N suggestions with marks
             return order
                 .slice(0, this.maxSuggestions)
-                .map((idx) => [idx, filtered[info.idx[idx]]])
+                .map((idx) => [idx, this.suggestionsList[info.idx[idx]]])
                 .map((suggestion: [number, string]) => uFuzzy.highlight(suggestion[1], info.ranges[suggestion[0]]));
         }
         return [];
@@ -134,6 +123,16 @@ export class DataviewSuggester extends EditorSuggest<String> {
         return `${key}:: ${stringValue}`;
     }
 
+    filterCompositeValue(compositeValue: string): boolean {
+        for (const filterPattern of this.plugin.settings.ignoredFields) {
+            const regex = new RegExp(`^(${filterPattern})::.*`);
+            if (regex.test(compositeValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     buildNewIndex() {
         console.log("Begin Rebuilding dataview suggestion index");
         const startTime = performance.now();
@@ -166,6 +165,9 @@ export class DataviewSuggester extends EditorSuggest<String> {
                     if (value === null || value === undefined) continue; // skip empty fields
 
                     let compositeValue = this.formatCompositeValue(key, value);
+                    if (!this.filterCompositeValue(compositeValue)) {
+                        continue;
+                    }
 
                     if (newSuggestions.indexOf(compositeValue) === -1) {
                         // suggestion not seen on any page yet
@@ -216,6 +218,9 @@ export class DataviewSuggester extends EditorSuggest<String> {
                     if (value === null || value === undefined) continue; // skip empty fields
 
                     let compositeValue = this.formatCompositeValue(key, value);
+                    if (!this.filterCompositeValue(compositeValue)) {
+                        continue;
+                    }
                     if (updateCompositeValues.indexOf(compositeValue) === -1) {
                         updateCompositeValues.push(compositeValue);
                     }

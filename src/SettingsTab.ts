@@ -33,6 +33,7 @@ export class SettingsTab extends PluginSettingTab {
                             .map((val) => val.trim())
                             .filter((val) => val.length > 0);
                         await this.plugin.saveSettings();
+                        this.plugin.suggester?.buildNewIndex();
                     });
             });
     }
