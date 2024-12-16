@@ -36,5 +36,22 @@ export class SettingsTab extends PluginSettingTab {
                         this.plugin.suggester?.buildNewIndex();
                     });
             });
+        new Setting(containerEl)
+            .setName("Exclude files")
+            .setDesc("Path pattern to exclude files or folders from suggestions. One pattern per line.")
+            .addTextArea((textArea) => {
+                textArea.inputEl.setAttribute("rows", "5");
+                textArea
+                    .setPlaceholder("templates/")
+                    .setValue(this.plugin.settings.ignoredFiles.join("\n"))
+                    .onChange(async (value) => {
+                        this.plugin.settings.ignoredFiles = value
+                            .split("\n")
+                            .map((val) => val.trim())
+                            .filter((val) => val.length > 0);
+                        await this.plugin.saveSettings();
+                        this.plugin.suggester?.buildNewIndex();
+                    });
+            });
     }
 }

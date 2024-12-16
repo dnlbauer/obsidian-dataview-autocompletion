@@ -5,10 +5,12 @@ import { SettingsTab } from "./SettingsTab";
 
 interface DataviewAutocompleteSettings {
     ignoredFields: string[];
+    ignoredFiles: string[];
 }
 
 const DEFAULT_SETTINGS: DataviewAutocompleteSettings = {
     ignoredFields: ["created.*", "modified.*", "date"],
+    ignoredFiles: ["templates/"],
 };
 
 export default class DataviewAutocompletePlugin extends Plugin {
