@@ -1,6 +1,6 @@
 import { App, Plugin, PluginSettingTab, Setting, TFile } from "obsidian";
 import { DataviewSuggester } from "./DataviewSuggester";
-import { getAPI } from "obsidian-dataview";
+import { getAPI, isPluginEnabled } from "obsidian-dataview";
 import { SettingsTab } from "./SettingsTab";
 
 interface DataviewAutocompleteSettings {
@@ -15,18 +15,19 @@ const DEFAULT_SETTINGS: DataviewAutocompleteSettings = {
 
 export default class DataviewAutocompletePlugin extends Plugin {
     settings: DataviewAutocompleteSettings;
-    suggester: DataviewSuggester | undefined;
+    suggester: DataviewSuggester;
 
     async onload() {
         await this.loadSettings();
         this.addSettingTab(new SettingsTab(this.app, this));
 
+        this.suggester = new DataviewSuggester(this, 10, true, true);
+        this.registerEditorSuggest(this.suggester);
+
         this.registerEvent(
             // @ts-ignore
             this.app.metadataCache.on("dataview:index-ready", () => {
-                if (this.suggester !== undefined) {
-                    this.suggester.onDataviewIndexReady();
-                }
+                this.suggester.onDataviewIndexReady();
             }),
         );
 
@@ -35,24 +36,14 @@ export default class DataviewAutocompletePlugin extends Plugin {
                 // @ts-ignore
                 "dataview:metadata-change",
                 (type: string, file: TFile, oldPath?: string) => {
-                    if (this.suggester !== undefined) {
-                        this.suggester.onDataviewMetadataChange(type, file, oldPath);
-                    }
+                    this.suggester.onDataviewMetadataChange(type, file, oldPath);
                 },
             ),
         );
 
-        this.app.workspace.onLayoutReady(() => {
-            // @ts-ignore
-            if (!Object.keys(this.app.plugins.plugins).includes("dataview")) {
-                console.warn("Dataview plugin not installed. Dataview Autocompletion plugin will not work.");
-            } else {
-                // register suggester, requires dataview to be loaded first.
-                console.log("Registering dataview autocompletion suggester");
-                this.suggester = new DataviewSuggester(this, 10, true, true);
-                this.registerEditorSuggest(this.suggester);
-            }
-        });
+        if (isPluginEnabled(this.app) && getAPI(this.app)?.index.initialized) {
+            this.suggester.onDataviewIndexReady();
+        }
     }
 
     onunload() {}
