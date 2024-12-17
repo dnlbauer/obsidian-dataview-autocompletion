@@ -14,10 +14,6 @@ const createBaseConfig = (outdir) => ({
                     src: "manifest.json",
                     dest: outdir,
                 },
-                {
-                    src: "styles.css",
-                    dest: outdir,
-                },
             ],
         }),
     ),
