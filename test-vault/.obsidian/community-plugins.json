@@ -1,5 +1,6 @@
 [
   "sample-plugin",
   "dataview",
-  "obsidian-dataview-autocompletion"
+  "obsidian-dataview-autocompletion",
+  "dataview-autocompletion"
 ]

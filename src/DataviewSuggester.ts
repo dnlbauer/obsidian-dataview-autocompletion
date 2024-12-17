@@ -159,6 +159,8 @@ export class DataviewSuggester extends EditorSuggest<String> {
             }
 
             const page = dataviewApi.page(file.path);
+            if (page === undefined) continue; // not a markdown file
+
             const fields = Object.keys(page)
                 .filter((k) => k !== "file")
                 .map((k) => [k, page[k]]);
@@ -218,6 +220,8 @@ export class DataviewSuggester extends EditorSuggest<String> {
             const updateCompositeValues = [];
 
             const page = getAPI(this.app).page(file.path);
+            if (page === undefined) return; // not a markdown file
+
             const fields = Object.keys(page)
                 .filter((k) => k !== "file")
                 .map((k) => [k, page[k]]);
