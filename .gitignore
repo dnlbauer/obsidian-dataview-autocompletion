@@ -31,3 +31,5 @@ test-vault/.obsidian/*
 # If its import to test though, add it somewhere where other
 # people can test it too.
 test-vault/untracked/*
+
+build

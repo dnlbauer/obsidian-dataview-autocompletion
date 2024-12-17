@@ -1,6 +1,6 @@
 {
   "name": "obsidian-dataview-autocompletion",
-  "version": "1.0.0",
+  "version": "0.8",
   "description": "This is a plugin for Obsidian that provides autocompletion for Dataview metadata fields",
   "main": "main.js",
   "scripts": {
@@ -8,8 +8,7 @@
     "build": "npx rollup --config rollup.config.js --environment BUILD:production",
     "check-format": "npx prettier --check src",
     "test": "npx jest",
-    "version": "node version-bump.mjs && git add manifest.json versions.json",
-    "prepare": "husky"
+    "version": "node ersion-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [
     "Obsidian",

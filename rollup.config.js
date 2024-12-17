@@ -3,16 +3,31 @@ import commonjs from "@rollup/plugin-commonjs";
 import copy from "rollup-plugin-copy";
 import typescript2 from "rollup-plugin-typescript2";
 
-const BASE_CONFIG = {
+const createBaseConfig = (outdir) => ({
     input: "src/main.ts",
     external: ["obsidian"],
-};
+    plugins: getRollupPlugins(
+        undefined,
+        copy({
+            targets: [
+                {
+                    src: "manifest.json",
+                    dest: outdir,
+                },
+                {
+                    src: "styles.css",
+                    dest: outdir,
+                },
+            ],
+        }),
+    ),
+});
 
 const getRollupPlugins = (tsconfig, ...plugins) =>
     [typescript2(tsconfig), nodeResolve({ browser: true }), commonjs()].concat(plugins);
 
 const DEV_PLUGIN_CONFIG = {
-    ...BASE_CONFIG,
+    ...createBaseConfig("test-vault/.obsidian/plugins/dataview-suggester"),
     output: {
         dir: "test-vault/.obsidian/plugins/dataview-suggester",
         sourcemap: "inline",
@@ -20,25 +35,10 @@ const DEV_PLUGIN_CONFIG = {
         exports: "default",
         name: "Dataview Suggester (Development)",
     },
-    plugins: getRollupPlugins(
-        undefined,
-        copy({
-            targets: [
-                {
-                    src: "manifest.json",
-                    dest: "test-vault/.obsidian/plugins/dataview-suggester/",
-                },
-                {
-                    src: "styles.css",
-                    dest: "test-vault/.obsidian/plugins/dataview-suggester/",
-                },
-            ],
-        }),
-    ),
 };
 
 const PROD_PLUGIN_CONFIG = {
-    ...BASE_CONFIG,
+    ...createBaseConfig("build"),
     output: {
         dir: "build",
         sourcemap: "inline",
@@ -47,7 +47,6 @@ const PROD_PLUGIN_CONFIG = {
         exports: "default",
         name: "Dataview Suggester (Production)",
     },
-    plugins: getRollupPlugins(),
 };
 
 let configs = [];
