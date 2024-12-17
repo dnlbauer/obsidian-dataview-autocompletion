@@ -301,13 +301,12 @@ export class DataviewSuggester extends EditorSuggest<String> {
             for (const value of this.suggestionsRefs.get(file.path)!) {
                 this.suggestionsRefCount.set(value, this.suggestionsRefCount.get(value)! - 1);
                 if (this.suggestionsRefCount.get(value) === 0) {
-                    console.debug("deleting value from suggestion index", value);
                     this.suggestionsList.splice(this.suggestionsList.indexOf(value), 1);
                 }
             }
             this.suggestionsRefs.delete(file.path);
         } else {
-            console.warn("Unknown update type:", type, file, oldPath);
+            console.debug("Unknown update type:", type, file, oldPath);
         }
     }
 }
