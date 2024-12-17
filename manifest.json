@@ -1,7 +1,7 @@
 {
   "id": "dataview-autocompletion",
   "name": "Dataview Autocompletion",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "minAppVersion": "0.15.0",
   "description": "Adds autocompletion to Dataview metadata fields",
   "author": "Daniel Bauer",
