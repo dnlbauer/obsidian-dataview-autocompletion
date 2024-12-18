@@ -68,9 +68,19 @@ export class DataviewSuggester extends EditorSuggest<String> {
     }
 
     renderSuggestion(value: string, el: HTMLElement): void {
-        // replace marks with bold
-        const formattedHtml = value.replace(/<mark>(.*?)<\/mark>/g, '<span style="font-weight: bold;">$1</span>');
-        el.innerHTML = formattedHtml;
+        // Split the value into parts based on the <mark> tags and their content
+        const parts = value.split(/(<mark>.*?<\/mark>)/g);
+
+        // We cannot use inner HTML; Create a span for each part
+        parts.forEach((part) => {
+            if (part.startsWith("<mark>") && part.endsWith("</mark>")) {
+                const text = part.slice(6, -7); // Remove <mark> and </mark>
+                el.createEl("span", { text, cls: "suggestion-highlight" });
+            } else {
+                // For normal text, create a text node or <span>
+                el.createEl("span", { text: part });
+            }
+        });
     }
 
     selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
