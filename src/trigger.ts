@@ -3,29 +3,28 @@
  * and captures the enclosed text
  * If the brackets start a markdown link, they are ignored.
  * Wiki links don't need to be ignored since Obsidian overwrites suggestions for them.
+ * We are not allowd to use lookbehinds, because iOS does not support them in older versions.
  */
 const filledRegex = new RegExp(
-    "(" +
-        [
-            // pattern for parantheses
-            // pos. lookbehind for opening parantheses; no closing square bracket before to exlude markdown links
-            /(?<=^\(|[^\]]\()/,
-            /.+?/,
-            // pos. lookahead for closing paranthesis; not followed by another one for nested ((test))
-            /(?=\)$|\)[^\)])/,
+    [
+        // pattern for parantheses
+        // look for opening parantheses; no closing or opening square bracket before to exlude markdown links, etc.
+        /(?:^\(|[^\[\]]\()/,
+        /(.+?)/,
+        // pos. lookahead for closing paranthesis; not followed by another one for nested ((test))
+        /(?=\)$|\)[^\)])/,
 
-            /|/,
+        /|/,
 
-            // pattern for square brackets
-            // pos. lookbehind for opening square bracket
-            /(?<=\[)/,
-            /.+?/,
-            // pos. lookahead for closing bracket; not followed by another one ([[test]]) or an opening paranthese (markdown link!)
-            /(?=\]$|\][^\]\(])/,
-        ]
-            .map((s) => s.source)
-            .join("") +
-        ")",
+        // pattern for square brackets
+        // look for opening square brackets
+        /(?:\[)/,
+        /(.+?)/,
+        // pos. lookahead for closing bracket; not followed by another one ([[test]]) or an opening paranthese (markdown link!)
+        /(?=\]$|\][^\]\(])/,
+    ]
+        .map((s) => s.source)
+        .join(""),
     "g",
 );
 
@@ -52,17 +51,19 @@ export function getTriggerText(line: string, cursorPos: number): [string, number
  */
 function getTriggerTextFromRegex(line: string, cursorPos: number, regex: RegExp): [string, number, number] | null {
     let matches = Array.from(line.matchAll(regex));
+    console.log(matches);
     for (const match of matches) {
         if (match.index === undefined) {
             continue;
         }
 
-        const matchStart = match!.index;
-        const matchEnd = matchStart + match[1].length;
+        const matchText = match[1] || match[2];
+        const matchStart = match!.index + match[0].indexOf(matchText);
+        const matchEnd = matchStart + matchText.length;
         const cursorInMatch = cursorPos >= matchStart && cursorPos <= matchEnd;
 
         if (cursorInMatch) {
-            return [match[1], matchStart, matchEnd];
+            return [matchText, matchStart, matchEnd];
         }
     }
     return null;

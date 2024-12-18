@@ -8,6 +8,7 @@
     "build": "npx rollup --config rollup.config.js --environment BUILD:production",
     "check-format": "npx prettier --check src",
     "test": "npx jest",
+    "bdd": "npx jest -i --watch --no-cache",
     "version": "node ersion-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [
