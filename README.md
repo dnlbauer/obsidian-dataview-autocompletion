@@ -3,7 +3,7 @@
 This is a plugin for Obsidian (https://obsidian.md).
 
 Obsidian Dataview Autocomplete enhances the functionality of the popular [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview)
-by providing autocomplete suggestions for metadata fields in the editor. This makes it easy to reuse existing fields and reduced typing errors.
+by providing autocomplete suggestions for metadata fields in the editor. This makes it easy to reuse existing fields and reduces typing errors.
 
 ![Demo](./assets/demo.gif)
 
