@@ -1,3 +1,28 @@
-span.suggestion-highlight {
+div.dataview-suggestion-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-inline-end: auto;
+}
+
+div.dataview-suggestion-title {
+  overflow-wrap: break-word;
+}
+
+div.dataview-suggestion-note p {
+  margin-block: 0px;
+}
+
+div.dataview-suggestion-note{
+  font-size: 0.8em;
+  color: var(--text-muted);
+  width: 100%;
+  flex-basis: 100%;
+  overflow-wrap: break-word;
+}
+
+span.dataview-suggestion-highlight {
   font-weight: bold;
 }
+

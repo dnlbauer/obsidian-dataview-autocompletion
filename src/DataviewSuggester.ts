@@ -5,12 +5,16 @@ import {
     EditorSuggest,
     EditorSuggestContext,
     EditorSuggestTriggerInfo,
+    htmlToMarkdown,
+    MarkdownRenderer,
+    MarkdownView,
     TFile,
 } from "obsidian";
 import { getTriggerText } from "./trigger";
 import uFuzzy from "@leeoniya/ufuzzy";
 import { getAPI, DataviewApi } from "obsidian-dataview";
 import DataviewAutocompletePlugin from "./main";
+import { parentPort } from "worker_threads";
 
 export class DataviewSuggester extends EditorSuggest<String> {
     plugin: DataviewAutocompletePlugin;
@@ -71,16 +75,37 @@ export class DataviewSuggester extends EditorSuggest<String> {
         // Split the value into parts based on the <mark> tags and their content
         const parts = value.split(/(<mark>.*?<\/mark>)/g);
 
-        // We cannot use inner HTML; Create a span for each part
-        parts.forEach((part) => {
-            if (part.startsWith("<mark>") && part.endsWith("</mark>")) {
-                const text = part.slice(6, -7); // Remove <mark> and </mark>
-                el.createEl("span", { text, cls: "suggestion-highlight" });
+        const container = el.createDiv("dataview-suggestion-content");
+        const titleDiv = container.createDiv("dataview-suggestion-title");
+
+        parts.forEach((textPart) => {
+            if (textPart.startsWith("<mark>") && textPart.endsWith("</mark>")) {
+                const text = textPart.slice(6, -7); // Remove <mark> and </mark>
+                titleDiv.createEl("span", { text, cls: "dataview-suggestion-highlight" });
             } else {
-                // For normal text, create a text node or <span>
-                el.createEl("span", { text: part });
+                titleDiv.appendText(textPart);
             }
         });
+
+        if (value.indexOf("[[") !== -1 || value.indexOf("]]") !== -1 || value.indexOf("](") !== -1) {
+            const noteDiv = container.createDiv("dataview-suggestion-note");
+            let suggestionText = "";
+            parts.forEach((textPart) => {
+                if (textPart.startsWith("<mark>") && textPart.endsWith("</mark>")) {
+                    const text = textPart.slice(6, -7); // Remove <mark> and </mark>
+                    suggestionText += text;
+                } else {
+                    suggestionText += textPart;
+                }
+            });
+            MarkdownRenderer.render(
+                this.app,
+                htmlToMarkdown(suggestionText),
+                noteDiv,
+                this.context!.file.path,
+                this.app.workspace.getActiveViewOfType(MarkdownView)!,
+            );
+        }
     }
 
     selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
