@@ -122,14 +122,16 @@ export class DataviewSuggester extends EditorSuggest<String> {
         // If the value is a string, number or boolean, we can simply convert it to a string
         if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
             stringValue = value.toString();
-        } else if (dataviewAPI.value.typeOf(value) === "link" && value.type === "file" && value.display !== undefined) {
-            // value.toString always adds a display value to wiki-style links.
-            // parse wiki-style links without display value manually here to prevent this from happening for [[filename]]
-            stringValue = `[[${value.path.split("/").pop().replace(".md", "")}]]`;
+        } else if (dataviewAPI.value.typeOf(value) === "link" && value.type === "file") {
+            // parse wiki-style links
+            if (value.display !== undefined) {
+                stringValue = `[[${value.path.split("/").pop().replace(".md", "")}|${value.display}]]`;
+            } else {
+                stringValue = `[[${value.path.split("/").pop().replace(".md", "")}]]`;
+            }
         } else {
             stringValue = dataviewAPI.value.toString(value);
         }
-
         return `${key}:: ${stringValue}`;
     }
 
