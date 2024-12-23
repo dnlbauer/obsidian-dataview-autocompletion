@@ -72,10 +72,13 @@ export class DataviewSuggester extends EditorSuggest<String> {
 
     renderMarkdownSuggestion(value: string, el: HTMLElement): void {
         // render markdown preview of inline dataview metadata field
-        let suggestionText = this.context!.editor.getLine(this.context!.start.line).slice(this.context!.start.ch-1, this.context!.start.ch)!
+        let suggestionText = this.context!.editor.getLine(this.context!.start.line).slice(
+            this.context!.start.ch - 1,
+            this.context!.start.ch,
+        )!;
         suggestionText += value.replace(/<mark>(.*?)<\/mark>/g, "$1");
-        suggestionText += suggestionText.startsWith("(") ? ")" : "]"
-        
+        suggestionText += suggestionText.startsWith("(") ? ")" : "]";
+
         MarkdownRenderer.render(
             this.app,
             htmlToMarkdown(suggestionText),
