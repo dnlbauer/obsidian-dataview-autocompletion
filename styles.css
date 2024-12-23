@@ -10,7 +10,7 @@ div.dataview-suggestion-title {
   overflow-wrap: break-word;
 }
 
-div.dataview-suggestion-note p {
+div.dataview-suggestion-title p {
   margin-block: 0px;
 }
 
@@ -20,6 +20,7 @@ div.dataview-suggestion-note{
   width: 100%;
   flex-basis: 100%;
   overflow-wrap: break-word;
+  padding-left: 8px;
 }
 
 span.dataview-suggestion-highlight {

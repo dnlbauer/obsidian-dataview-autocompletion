@@ -70,52 +70,54 @@ export class DataviewSuggester extends EditorSuggest<String> {
         return [];
     }
 
-    renderSuggestion(value: string, el: HTMLElement): void {
-        // Split the value into parts based on the <mark> tags and their content
+    renderMarkdownSuggestion(value: string, el: HTMLElement): void {
+        // render markdown preview of inline dataview metadata field
+        let suggestionText = this.context!.editor.getLine(this.context!.start.line).slice(this.context!.start.ch-1, this.context!.start.ch)!
+        suggestionText += value.replace(/<mark>(.*?)<\/mark>/g, "$1");
+        suggestionText += suggestionText.startsWith("(") ? ")" : "]"
+        
+        MarkdownRenderer.render(
+            this.app,
+            htmlToMarkdown(suggestionText),
+            el,
+            this.context!.file.path,
+            this.app.workspace.getActiveViewOfType(MarkdownView)!,
+        );
+    }
+
+    renderSourceSuggestion(value: string, el: HTMLElement): void {
+        // render source text with highlights
+        // replaces <mark>...</mark> with <span>...</span>
         const parts = value.split(/(<mark>.*?<\/mark>)/g);
-
-        const container = el.createDiv("dataview-suggestion-content");
-        const titleDiv = container.createDiv("dataview-suggestion-title");
-
         parts.forEach((textPart) => {
             if (textPart.startsWith("<mark>") && textPart.endsWith("</mark>")) {
                 const text = textPart.slice(6, -7); // Remove <mark> and </mark>
-                titleDiv.createEl("span", { text, cls: "dataview-suggestion-highlight" });
+                el.createEl("span", { text, cls: "dataview-suggestion-highlight" });
             } else {
-                titleDiv.appendText(textPart);
+                el.appendText(textPart);
             }
         });
+    }
 
-        if (value.indexOf("[[") !== -1 || value.indexOf("]]") !== -1 || value.indexOf("](") !== -1) {
-            const noteDiv = container.createDiv("dataview-suggestion-note");
-            let suggestionText = "";
-            parts.forEach((textPart) => {
-                if (textPart.startsWith("<mark>") && textPart.endsWith("</mark>")) {
-                    const text = textPart.slice(6, -7); // Remove <mark> and </mark>
-                    suggestionText += text;
-                } else {
-                    suggestionText += textPart;
-                }
-            });
-            MarkdownRenderer.render(
-                this.app,
-                htmlToMarkdown(suggestionText),
-                noteDiv,
-                this.context!.file.path,
-                this.app.workspace.getActiveViewOfType(MarkdownView)!,
-            );
-        }
+    renderSuggestion(value: string, el: HTMLElement): void {
+        const container = el.createDiv("dataview-suggestion-content");
+        const titleDiv = container.createDiv("dataview-suggestion-title");
+        const noteDiv = container.createDiv("dataview-suggestion-note");
+
+        this.renderMarkdownSuggestion(value, titleDiv);
+        this.renderSourceSuggestion(value, noteDiv);
     }
 
     selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
-        const { editor, start, end } = this.context!;
         // remove marks from selection
         value = value.replace(/<mark>(.*?)<\/mark>/g, "$1");
+
+        const { editor, start, end } = this.context!;
         editor.replaceRange(value, start, end);
 
         const newCursorPos = {
-            line: end.line + 1,
-            ch: 0,
+            line: end.line,
+            ch: start.ch + value.length + 1,
         };
         editor.setCursor(newCursorPos);
     }
