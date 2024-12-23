@@ -14,7 +14,6 @@ import { getTriggerText } from "./trigger";
 import uFuzzy from "@leeoniya/ufuzzy";
 import { getAPI, DataviewApi } from "obsidian-dataview";
 import DataviewAutocompletePlugin from "./main";
-import { parentPort } from "worker_threads";
 
 export class DataviewSuggester extends EditorSuggest<String> {
     plugin: DataviewAutocompletePlugin;
