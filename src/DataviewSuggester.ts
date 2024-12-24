@@ -12,7 +12,7 @@ import {
 } from "obsidian";
 import { getTriggerText } from "./trigger";
 import uFuzzy from "@leeoniya/ufuzzy";
-import { getAPI, DataviewApi } from "obsidian-dataview";
+import { getAPI, DataviewApi, DataObject } from "obsidian-dataview";
 import DataviewAutocompletePlugin from "./main";
 
 export class DataviewSuggester extends EditorSuggest<String> {
@@ -164,6 +164,10 @@ export class DataviewSuggester extends EditorSuggest<String> {
         return `${key}:: ${stringValue}`;
     }
 
+    /**
+     * Filters out composite values from suggestions that match any of the ignored fields.
+     * @returns true if the value should be shown in suggestions, false otherwise
+     */
     filterCompositeValue(compositeValue: string): boolean {
         for (const filterPattern of this.plugin.settings.ignoredFields) {
             const regex = new RegExp(`^(${filterPattern})::.*`);
@@ -184,6 +188,36 @@ export class DataviewSuggester extends EditorSuggest<String> {
         return true;
     }
 
+    extractCompositeValuesFromPage(page: DataObject): string[] {
+        const fields = Object.keys(page)
+                .filter((k) => k !== "file")
+                .map((k) => [k, page[k]]);
+
+        const compositeValues: string[] = [];
+
+        for (let [key, val] of fields) {
+            // fields can be a single value or a dict, so we need to handle both
+            let arrayVal;
+            if (!Array.isArray(val)) {
+                arrayVal = [val];
+            } else {
+                arrayVal = val;
+            }
+
+            // Add composite value "key:: value" to suggestions list
+            for (const value of arrayVal) {
+                if (value === null || value === undefined) continue; // skip empty fields
+
+                let compositeValue = this.formatCompositeValue(key, value);
+                compositeValues.push(compositeValue);
+                if (!this.filterCompositeValue(compositeValue)) {
+                    continue;
+                }
+            }
+        }
+        return compositeValues;
+    }
+
     buildNewIndex() {
         console.log("Begin Rebuilding dataview suggestion index");
         const startTime = performance.now();
@@ -202,40 +236,19 @@ export class DataviewSuggester extends EditorSuggest<String> {
             const page = dataviewApi.page(file.path);
             if (page === undefined) continue; // not a markdown file
 
-            const fields = Object.keys(page)
-                .filter((k) => k !== "file")
-                .map((k) => [k, page[k]]);
-
+            const compositeValues = this.extractCompositeValuesFromPage(page);
             const pageRefs = [];
 
-            for (let [key, val] of fields) {
-                // fields can be a single value or a dict, so we need to handle both
-                let arrayVal;
-                if (!Array.isArray(val)) {
-                    arrayVal = [val];
-                } else {
-                    arrayVal = val;
-                }
-
-                // Add composite value "key:: value" to suggestions list
-                for (const value of arrayVal) {
-                    if (value === null || value === undefined) continue; // skip empty fields
-
-                    let compositeValue = this.formatCompositeValue(key, value);
-                    if (!this.filterCompositeValue(compositeValue)) {
-                        continue;
-                    }
-
-                    if (newSuggestions.indexOf(compositeValue) === -1) {
-                        // suggestion not seen on any page yet
-                        pageRefs.push(compositeValue);
-                        newSuggestionsRefCount.set(compositeValue, 1);
-                        newSuggestions.push(compositeValue);
-                    } else if (pageRefs.indexOf(compositeValue) === -1) {
-                        // suggestion not seen on this page, but on another
-                        pageRefs.push(compositeValue);
-                        newSuggestionsRefCount.set(compositeValue, newSuggestionsRefCount.get(compositeValue)! - 1);
-                    }
+            for (let compositeValue of compositeValues) {
+                if (newSuggestions.indexOf(compositeValue) === -1) {
+                    // suggestion not seen on any page yet
+                    pageRefs.push(compositeValue);
+                    newSuggestionsRefCount.set(compositeValue, 1);
+                    newSuggestions.push(compositeValue);
+                } else if (pageRefs.indexOf(compositeValue) === -1) {
+                    // suggestion not seen on this page, but on another
+                    pageRefs.push(compositeValue);
+                    newSuggestionsRefCount.set(compositeValue, newSuggestionsRefCount.get(compositeValue)! - 1);
                 }
             }
             newSuggestionsRefs.set(file.path, pageRefs);
@@ -258,35 +271,10 @@ export class DataviewSuggester extends EditorSuggest<String> {
             if (!this.filterFile(file.path)) {
                 return;
             }
-            const updateCompositeValues = [];
 
             const page = getAPI(this.app).page(file.path);
             if (page === undefined) return; // not a markdown file
-
-            const fields = Object.keys(page)
-                .filter((k) => k !== "file")
-                .map((k) => [k, page[k]]);
-            for (let [key, val] of fields) {
-                // fields can be a single value or a dict, so we need to handle both
-                let arrayVal;
-                if (!Array.isArray(val)) {
-                    arrayVal = [val];
-                } else {
-                    arrayVal = val;
-                }
-
-                for (const value of arrayVal) {
-                    if (value === null || value === undefined) continue; // skip empty fields
-
-                    let compositeValue = this.formatCompositeValue(key, value);
-                    if (!this.filterCompositeValue(compositeValue)) {
-                        continue;
-                    }
-                    if (updateCompositeValues.indexOf(compositeValue) === -1) {
-                        updateCompositeValues.push(compositeValue);
-                    }
-                }
-            }
+            const updateCompositeValues = this.extractCompositeValuesFromPage(page);
 
             const oldCompositeValues = this.suggestionsRefs.get(file.path) || [];
 
