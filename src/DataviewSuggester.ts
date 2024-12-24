@@ -190,8 +190,8 @@ export class DataviewSuggester extends EditorSuggest<String> {
 
     extractCompositeValuesFromPage(page: DataObject): string[] {
         const fields = Object.keys(page)
-                .filter((k) => k !== "file")
-                .map((k) => [k, page[k]]);
+            .filter((k) => k !== "file")
+            .map((k) => [k, page[k]]);
 
         const compositeValues: string[] = [];
 
@@ -294,7 +294,10 @@ export class DataviewSuggester extends EditorSuggest<String> {
 
             // adding value to index if not present in index
             for (const newCompositeValue of updateCompositeValues) {
-                if (!this.suggestionsRefCount.has(newCompositeValue)) {
+                if (
+                    !this.suggestionsRefCount.has(newCompositeValue) ||
+                    this.suggestionsRefCount.get(newCompositeValue) === 0
+                ) {
                     // not seen in this or other files
                     this.suggestionsList.push(newCompositeValue);
                     this.suggestionsRefCount.set(newCompositeValue, 1);
