@@ -12,7 +12,7 @@ import {
 } from "obsidian";
 import { getTriggerText } from "./trigger";
 import uFuzzy from "@leeoniya/ufuzzy";
-import { getAPI, DataviewApi, DataObject } from "obsidian-dataview";
+import { getAPI, DataObject } from "obsidian-dataview";
 import DataviewAutocompletePlugin from "./main";
 
 export class DataviewSuggester extends EditorSuggest<String> {
@@ -41,7 +41,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
         });
     }
 
-    onTrigger(cursor: EditorPosition, editor: Editor, file: TFile): EditorSuggestTriggerInfo | null {
+    override onTrigger(cursor: EditorPosition, editor: Editor, file: TFile): EditorSuggestTriggerInfo | null {
         const line = editor.getLine(cursor.line);
 
         let trigger = getTriggerText(line, cursor.ch);
@@ -55,7 +55,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
         return null;
     }
 
-    getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
+    override getSuggestions(context: EditorSuggestContext): string[] | Promise<string[]> {
         const idxs = this.searcher.filter(this.suggestionsList, context.query);
         if (idxs != null && idxs.length > 0) {
             let info = this.searcher.info(idxs, this.suggestionsList, context.query);
@@ -70,6 +70,12 @@ export class DataviewSuggester extends EditorSuggest<String> {
         return [];
     }
 
+    /**
+     * Renders a suggestion string to the HTML element using a markdown renderer
+     * Uses the context to get the current editor and cursor position and
+     * finds out if the suggestion should be rendered with or without the
+     * field name.
+     */
     renderMarkdownSuggestion(value: string, el: HTMLElement): void {
         // render markdown preview of inline dataview metadata field
         let suggestionText = this.context!.editor.getLine(this.context!.start.line).slice(
@@ -88,6 +94,9 @@ export class DataviewSuggester extends EditorSuggest<String> {
         );
     }
 
+    /**
+     * Render the suggestion as markdown source code with highlights
+     */
     renderSourceSuggestion(value: string, el: HTMLElement): void {
         // render source text with highlights
         // replaces <mark>...</mark> with <span>...</span>
@@ -102,7 +111,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
         });
     }
 
-    renderSuggestion(value: string, el: HTMLElement): void {
+    override renderSuggestion(value: string, el: HTMLElement): void {
         const container = el.createDiv("dataview-suggestion-content");
         const titleDiv = container.createDiv("dataview-suggestion-title");
         const noteDiv = container.createDiv("dataview-suggestion-note");
@@ -111,7 +120,7 @@ export class DataviewSuggester extends EditorSuggest<String> {
         this.renderSourceSuggestion(value, noteDiv);
     }
 
-    selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
+    override selectSuggestion(value: string, evt: MouseEvent | KeyboardEvent): void {
         // remove marks from selection
         value = value.replace(/<mark>(.*?)<\/mark>/g, "$1");
 
