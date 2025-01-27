@@ -55,9 +55,9 @@ export class SuggestionIndex {
         this.suggestionsRefs = newSuggestionsRefs;
 
         const endTime = performance.now();
-        console.log(
-            `Rebuilt dataview autocomplete index (${this.suggestionsList.length} elements, ${(endTime - startTime).toFixed(2)}ms)`,
-        );
+        // console.log(
+        //     `Rebuilt dataview autocomplete index (${this.suggestionsList.length} elements, ${(endTime - startTime).toFixed(2)}ms)`,
+        // );
     }
 
     public updateIndex(type: string, file: TFile, oldPath?: string) {
