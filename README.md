@@ -14,7 +14,9 @@ by providing autocomplete suggestions for metadata fields in the editor. This ma
   
 ## Installation
 
-While plugin is [waiting](https://github.com/obsidianmd/obsidian-releases/pull/4913) to be reviewed and added to the community plugin list, you can install it manually following the steps below:
+The plugin is available through Obsidian as a community plugin.
+
+### Manual installation
 
 1. Download the latest release files (manifest.json, styles.css, main.js) from the Releases page.
 2. Create a folder named "dataview-autocompletion" in the Obsidian plugins folder (.obsidian/plugins).
