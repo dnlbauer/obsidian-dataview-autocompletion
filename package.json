@@ -1,6 +1,6 @@
 {
   "name": "obsidian-dataview-autocompletion",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "This is a plugin for Obsidian that provides autocompletion for Dataview metadata fields",
   "main": "main.js",
   "scripts": {
