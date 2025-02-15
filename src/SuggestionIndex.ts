@@ -159,6 +159,10 @@ export class SuggestionIndex {
 
                 let compositeValue = this.formatCompositeValue(key, value);
                 compositeValues.push(compositeValue);
+                let prefixValue = key + ":: ";
+                if (compositeValues.indexOf(prefixValue) < 0) {
+                    compositeValues.push(prefixValue);
+                }
                 if (!this.filterCompositeValue(compositeValue)) {
                     continue;
                 }

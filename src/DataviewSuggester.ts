@@ -86,9 +86,17 @@ export class DataviewSuggester extends EditorSuggest<String> {
         suggestionText += value.replace(/<mark>(.*?)<\/mark>/g, "$1");
         suggestionText += suggestionText.startsWith("(") ? ")" : "]";
 
+        // Different rendering for prefix suggestions
+        var markdownText;
+        if (/.*\:: [\]\)]/.test(suggestionText)) {
+            markdownText = htmlToMarkdown("[" + suggestionText.slice(1, -1) + "*…*]");
+        } else {
+            markdownText = htmlToMarkdown(suggestionText);
+        }
+        console.log(markdownText);
         MarkdownRenderer.render(
             this.app,
-            htmlToMarkdown(suggestionText),
+            markdownText,
             el,
             this.context!.file.path,
             this.app.workspace.getActiveViewOfType(MarkdownView)!,
@@ -128,10 +136,20 @@ export class DataviewSuggester extends EditorSuggest<String> {
         const { editor, start, end } = this.context!;
         editor.replaceRange(value, start, end);
 
-        const newCursorPos = {
-            line: end.line,
-            ch: start.ch + value.length + 1,
-        };
+        // move cursor to end of suggestion for finished suggestions
+        // or to the end of the prefix
+        var newCursorPos;
+        if (value.endsWith(":: ")) {
+            newCursorPos = {
+                line: end.line,
+                ch: start.ch + value.length,
+            };
+        } else {
+            newCursorPos = {
+                line: end.line,
+                ch: start.ch + value.length + 1,
+            };
+        }
         editor.setCursor(newCursorPos);
     }
 
