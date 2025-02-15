@@ -15,7 +15,7 @@ export class SuggestionIndex {
 
     public buildNewIndex() {
         // console.log("Begin Rebuilding dataview suggestion index");
-        const startTime = performance.now();
+        // const startTime = performance.now();
         const dataviewApi = getAPI(this.plugin.app);
 
         const newSuggestions: string[] = [];
@@ -54,7 +54,7 @@ export class SuggestionIndex {
         this.suggestionsRefCount = newSuggestionsRefCount;
         this.suggestionsRefs = newSuggestionsRefs;
 
-        const endTime = performance.now();
+        // const endTime = performance.now();
         // console.log(
         //     `Rebuilt dataview autocomplete index (${this.suggestionsList.length} elements, ${(endTime - startTime).toFixed(2)}ms)`,
         // );
